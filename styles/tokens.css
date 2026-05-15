@@ -1,0 +1,117 @@
+/* ─────────────────────────────────────────────────────────────
+   Grow X · Design Tokens  v2
+   Clean B2B SaaS — inspired by daouoffice.com
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Ink ─────────────────────────────────── */
+  --ink-1:        #111827;
+  --ink-2:        #1F2937;
+  --ink-3:        #374151;
+  --ink-soft:     #4B5563;
+
+  /* ── Surface ─────────────────────────────── */
+  --paper-1:      #F4F6FA;   /* app bg — light blue-gray */
+  --paper-2:      #EEF2F8;
+  --paper-3:      #E4EBF5;
+  --mist:         #DDE3EF;
+  --mist-2:       #C8D3E5;
+
+  --bone:         #FFFFFF;   /* card bg */
+
+  /* ── Brand blue ──────────────────────────── */
+  --twilight-1:   #1040C0;
+  --twilight-2:   #1D59F0;   /* primary CTA blue */
+  --twilight-3:   #4D7DF5;   /* hover / lighter */
+  --vesper:       #93BBFD;   /* very light blue */
+
+  /* ── Grow (live/status green) ────────────── */
+  --grow-1:       #15803D;
+  --grow-2:       #16A34A;
+  --grow-3:       #4ADE80;
+
+  /* ── Ember (spiritual/warm accent) ──────── */
+  --ember:        #D97706;
+  --ember-soft:   #FCD34D;
+
+  /* ── Semantic ────────────────────────────── */
+  --bg:           var(--paper-1);
+  --bg-elev:      var(--bone);
+  --bg-deep:      var(--ink-1);
+
+  --fg:           var(--ink-1);
+  --fg-soft:      var(--ink-soft);
+  --fg-mute:      #6B7280;
+  --fg-faint:     #9CA3AF;
+  --fg-on-deep:   #F9FAFB;
+
+  --line:         var(--mist);
+  --line-strong:  var(--mist-2);
+  --line-on-deep: rgba(255,255,255,0.10);
+
+  --accent:       var(--twilight-2);
+  --accent-hi:    var(--twilight-3);
+
+  /* ── Type ────────────────────────────────── */
+  --f-display:    'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+  --f-body:       'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+  --f-mono:       ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --f-num:        'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+
+  --t-display-1:  clamp(28px, 3.6vw, 48px);
+  --t-display-2:  clamp(22px, 2.6vw, 34px);
+  --t-h1:         clamp(20px, 2vw, 28px);
+  --t-h2:         clamp(16px, 1.6vw, 22px);
+  --t-h3:         clamp(14px, 1.2vw, 17px);
+  --t-body-lg:    16px;
+  --t-body:       14px;
+  --t-sm:         13px;
+  --t-xs:         11px;
+
+  --leading-tight:   1.25;
+  --leading-snug:    1.4;
+  --leading-normal:  1.6;
+  --leading-loose:   1.75;
+
+  --tracking-tight:  -0.018em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.025em;
+  --tracking-mono:   0.04em;
+
+  /* ── Grid & space ────────────────────────── */
+  --gutter:       clamp(16px, 1.6vw, 24px);
+  --pad-x:        clamp(24px, 4vw, 64px);
+  --max-w:        1440px;
+  --rail:         clamp(40px, 5vw, 80px);
+
+  /* ── Radius ──────────────────────────────── */
+  --r-xs:    4px;
+  --r-sm:    8px;
+  --r-md:    10px;
+  --r-lg:    14px;
+  --r-xl:    20px;
+  --r-pill:  999px;
+
+  /* ── Elevation ───────────────────────────── */
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+  --shadow-2: 0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-3: 0 6px 20px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-4: 0 16px 48px rgba(0,0,0,0.12), 0 6px 16px rgba(0,0,0,0.07);
+  --shadow-deep-glow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 56px rgba(29,89,240,0.28);
+
+  /* ── Motion ──────────────────────────────── */
+  --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out:  cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --dur-fast:   160ms;
+  --dur-base:   260ms;
+  --dur-slow:   480ms;
+  --dur-epic:   900ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; --dur-epic: 0ms;
+  }
+}

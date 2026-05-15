@@ -1,0 +1,240 @@
+/* ─────────────────────────────────────────────────────────────
+   Grow X SSEL · Login Page
+   ───────────────────────────────────────────────────────────── */
+
+html, body { height: 100%; }
+
+.login-body {
+  min-height: 100vh;
+  background: var(--paper-1);
+  display: flex;
+  align-items: stretch;
+}
+
+.login-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ── Left brand panel ────────────────────────── */
+.lp-brand {
+  background: var(--ink-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 56px;
+  position: relative;
+  overflow: hidden;
+}
+.lp-brand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 30% 60%, rgba(29,89,240,0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.lpb-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  max-width: 380px;
+}
+
+.lpb-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.lpb-logo .brand-mark {
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 700;
+  color: #F9FAFB;
+  letter-spacing: -0.03em;
+}
+.lpb-logo .brand-x { color: var(--twilight-3); }
+.lpb-logo .brand-suf {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lpb-quote {
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.52);
+  font-weight: 400;
+}
+.lpb-ref {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.03em;
+}
+
+/* ── Right form panel ────────────────────────── */
+.lp-form-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  background: var(--paper-1);
+}
+
+.lp-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.lpc-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--twilight-2);
+  margin-bottom: 10px;
+}
+.lpc-title {
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 700;
+  color: var(--ink-1);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.lpc-sub {
+  font-size: 14px;
+  color: var(--fg-mute);
+  margin-bottom: 28px;
+}
+
+/* Role tabs */
+.role-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: var(--bone);
+}
+.role-tab {
+  padding: 11px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-mute);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.role-tab.is-active {
+  background: var(--twilight-2);
+  color: #fff;
+}
+
+/* Form fields */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lf-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.01em;
+}
+.lf-input, .lf-select {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: var(--f-body);
+  color: var(--ink-1);
+  background: var(--bone);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  outline: none;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.lf-input:focus, .lf-select:focus {
+  border-color: var(--twilight-2);
+  box-shadow: 0 0 0 3px rgba(29,89,240,0.10);
+}
+.lf-select-wrap {
+  position: relative;
+}
+.lf-select-wrap .lf-select { padding-right: 36px; }
+.lf-caret {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--fg-mute);
+  pointer-events: none;
+}
+
+.lf-err {
+  font-size: 12px;
+  color: #EF4444;
+  min-height: 18px;
+}
+
+.lf-submit {
+  margin-top: 6px;
+  padding: 13px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--f-body);
+  color: #fff;
+  background: var(--twilight-2);
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--dur-fast), transform var(--dur-fast);
+}
+.lf-submit:hover { background: var(--twilight-3); }
+.lf-submit:active { transform: scale(0.98); }
+
+.lpc-foot {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 13px;
+}
+.lpc-foot a {
+  color: var(--fg-mute);
+  text-decoration: none;
+  transition: color var(--dur-fast);
+}
+.lpc-foot a:hover { color: var(--ink-1); }
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 720px) {
+  .login-page { grid-template-columns: 1fr; }
+  .lp-brand { display: none; }
+  .lp-form-wrap { padding: 40px 24px; }
+}

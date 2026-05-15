@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grow X SSEL · 회원가입</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/signup.css">
+</head>
+<body class="signup-body">
+
+  <!-- Top bar -->
+  <div class="su-topbar">
+    <a class="su-logo" href="index.html">
+      Grow <span class="brand-x">X</span>
+      <span class="brand-suf">SSEL</span>
+    </a>
+    <a class="su-login-link" href="login.html">이미 계정이 있으신가요? 로그인 →</a>
+  </div>
+
+  <!-- Card -->
+  <div class="su-card">
+
+    <!-- Card header -->
+    <div class="su-card-head" id="su-card-head">
+      <div class="su-eyebrow">학교·기관 등록</div>
+      <h1 class="su-title">Grow X SSEL 시작하기</h1>
+      <p class="su-sub">학교 및 담당자 정보를 입력해주세요. 검토 후 24시간 이내 승인 처리됩니다.</p>
+    </div>
+
+    <!-- Step indicators -->
+    <div class="su-steps" id="su-steps"></div>
+
+    <!-- Form body (rendered by JS) -->
+    <div class="su-form-body" id="su-form-body"></div>
+
+    <!-- Success (hidden initially) -->
+    <div class="su-success" id="su-success" style="display:none"></div>
+
+    <!-- Footer nav -->
+    <div class="su-card-foot" id="su-card-foot"></div>
+
+  </div>
+
+<script src="scripts/signup.js"></script>
+</body>
+</html>

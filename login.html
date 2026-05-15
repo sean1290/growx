@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grow X SSEL · 로그인</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/login.css">
+</head>
+<body class="login-body">
+
+<div class="login-page">
+
+  <!-- ── Left: brand panel ── -->
+  <div class="lp-brand">
+    <div class="lpb-inner">
+      <div class="lpb-logo">
+        <span class="brand-mark">Grow <span class="brand-x">X</span></span>
+        <span class="brand-suf">SSEL</span>
+      </div>
+      <blockquote class="lpb-quote">
+        "강하고 담대하라 두려워하지 말며 놀라지 말라<br>
+        네가 어디로 가든지 네 하나님 여호와가 너와 함께 하느니라"
+        <span class="lpb-ref">— 여호수아 1:9</span>
+      </blockquote>
+    </div>
+  </div>
+
+  <!-- ── Right: login form ── -->
+  <div class="lp-form-wrap">
+    <div class="lp-card">
+      <div class="lpc-eyebrow">Grow X SSEL</div>
+      <h1 class="lpc-title">환영합니다</h1>
+      <p class="lpc-sub">계정 유형을 선택하고 로그인해주세요.</p>
+
+      <div class="role-tabs" id="role-tabs">
+        <button class="role-tab is-active" data-role="teacher">담임 선생님</button>
+        <button class="role-tab" data-role="admin">학교 관리자</button>
+      </div>
+
+      <!-- Teacher form -->
+      <form id="teacher-login-form" class="login-form">
+        <div class="lf-field">
+          <label class="lf-label" for="teacher-class-select">학급</label>
+          <div class="lf-select-wrap">
+            <select class="lf-select" id="teacher-class-select">
+              <option value="">— 학급을 선택하세요 —</option>
+            </select>
+            <span class="lf-caret" aria-hidden="true">▾</span>
+          </div>
+        </div>
+        <div class="lf-field">
+          <label class="lf-label" for="teacher-pw">비밀번호</label>
+          <input class="lf-input" type="password" id="teacher-pw" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div class="lf-err" id="teacher-err" role="alert"></div>
+        <button type="submit" class="lf-submit">로그인 <span aria-hidden="true">→</span></button>
+      </form>
+
+      <!-- Admin form -->
+      <form id="admin-login-form" class="login-form" style="display:none">
+        <div class="lf-field">
+          <label class="lf-label" for="admin-pw">학교 관리자 비밀번호</label>
+          <input class="lf-input" type="password" id="admin-pw" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div class="lf-err" id="admin-err" role="alert"></div>
+        <button type="submit" class="lf-submit">관리자 로그인 <span aria-hidden="true">→</span></button>
+      </form>
+
+      <div class="lpc-foot" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <a href="signup.html" style="font-size:13px;font-weight:600;color:var(--twilight-2);text-decoration:none">학교 등록 신청하기 →</a>
+        <a href="index.html" style="font-size:12px;color:var(--fg-mute);text-decoration:none">← 랜딩으로 돌아가기</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="scripts/auth.js"></script>
+<script src="scripts/login.js"></script>
+</body>
+</html>

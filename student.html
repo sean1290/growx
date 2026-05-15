@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grow X SSEL · 학생 체크인</title>
+<meta name="description" content="Grow X SSEL 학생 체크인 — 등교·하교 감정 체크인">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body class="app-body">
+
+<!-- ─── TOP HEADER (no teacher button) ─── -->
+<header class="app-header" id="app-header">
+  <a class="header-brand" href="student.html" aria-label="홈으로">
+    <span class="brand-mark">Grow <span class="brand-x">X</span></span>
+    <span class="brand-suf">SSEL</span>
+  </a>
+
+  <div class="header-meta">
+    <span class="hm-date" id="top-date">—</span>
+    <span class="hm-pulse" aria-hidden="true"></span>
+  </div>
+
+  <div class="student-class-badge" id="student-class-badge"></div>
+</header>
+
+<!-- ─── MAIN ─── -->
+<main class="app-main" id="app-main">
+  <section class="view" data-view="home"      id="view-home"></section>
+  <section class="view" data-view="arrival"   id="view-arrival"></section>
+  <section class="view" data-view="departure" id="view-departure"></section>
+  <section class="view" data-view="teacher"   id="view-teacher"></section>
+
+  <div class="app-toast" id="app-toast" role="status" aria-live="polite"></div>
+</main>
+
+<!-- auth.js first (defines GX), then inline session setup, then app.js -->
+<script src="scripts/auth.js"></script>
+<script>
+(function () {
+  var params  = new URLSearchParams(location.search);
+  var classId = params.get('class');
+
+  // Default to first classroom if no param (useful for demo/dev)
+  if (!classId && window.GX.CLASSROOMS.length) {
+    classId = window.GX.CLASSROOMS[0].id;
+  }
+
+  var cls = window.GX.CLASSROOMS.find(function (c) { return c.id === classId; });
+  if (cls) {
+    window.GX.setSession({
+      role:      'student',
+      classId:   cls.id,
+      className: cls.name,
+      grade:     cls.grade,
+    });
+  }
+})();
+</script>
+<script src="scripts/app.js" defer></script>
+</body>
+</html>
