@@ -1119,6 +1119,7 @@ async function openStudentProfile(name) {
 
     <div class="sp-section-head">
       <h3>체크인 기록 (${total}건)</h3>
+      <button class="tsc-btn tsc-btn--export" id="sp-export-pdf">📥 PDF 내보내기</button>
     </div>
 
     ${total === 0
@@ -1126,6 +1127,137 @@ async function openStudentProfile(name) {
       : `<div class="sp-history">${checkins.map(checkinRowHTML).join('')}</div>`}
   `;
 
+  body.querySelector('#sp-export-pdf').addEventListener('click', () => exportStudentPDF(name, checkins));
+}
+
+function exportStudentPDF(name, checkins) {
+  const arrivals = checkins.filter(c => c.type === 'arrival');
+  const deps     = checkins.filter(c => c.type === 'departure');
+  const total    = checkins.length;
+
+  const emoCounts = {};
+  checkins.forEach(c => { const e = c['감정']; if (e) emoCounts[e] = (emoCounts[e]||0)+1; });
+  const emoEntries = Object.entries(emoCounts).sort((a,b) => b[1]-a[1]);
+  const dominant   = emoEntries[0]?.[0] || '—';
+
+  const causeCounts = {};
+  arrivals.forEach(a => { const c = a['원인']; if (c) causeCounts[c] = (causeCounts[c]||0)+1; });
+  const topCauses = Object.entries(causeCounts).sort((a,b) => b[1]-a[1]).slice(0,3);
+
+  const energyLabels = ['','아주 낮음','낮음','보통','높음','아주 높음'];
+  const energyPoints = arrivals.slice(0,10).reverse().map(a => ({
+    label: String(a['제출 시각']||'').slice(5,10).replace('-','/'),
+    val:   energyLabels.indexOf(a['에너지']) > 0 ? energyLabels.indexOf(a['에너지']) : 0,
+  })).filter(p => p.val > 0);
+
+  let acc = 0;
+  const pieStops = emoEntries.map(([emo, count]) => {
+    const start = (acc / total) * 100;
+    acc += count;
+    return `${emoColor(emo)} ${start}% ${(acc/total)*100}%`;
+  }).join(', ');
+
+  const barColors = ['','#94A3B8','#94A3B8','#0284C7','#22C55E','#F59E0B'];
+  const printDate = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+
+  const recordsHTML = checkins.map(c => {
+    const ts    = String(c['제출 시각']||'').slice(0,16).replace('T',' ');
+    const isArr = c.type === 'arrival';
+    const rows  = isArr
+      ? [['에너지',c['에너지']],['몸의 위치',c['몸의 위치']],['원인',c['원인']],['한 줄 기도',c['한 줄 기도']]]
+      : [['세부 감정',c['세부 감정']],['몸의 위치',c['몸의 위치']],['조절 전략',c['조절 전략']],['관계',c['관계']],['미션 피드백',c['미션 피드백']],['자랑스러운 순간',c['자랑스러운 순간']],['내일 다짐',c['내일 다짐']],['감사',c['감사']]];
+    return `
+      <div class="record">
+        <div class="rec-top">
+          <span class="tag tag-${isArr?'arr':'dep'}">${isArr?'등교':'하교'}</span>
+          <span class="rec-time">${esc(ts)}</span>
+          <span class="rec-emo" style="color:${emoColor(c['감정']||'')}">${esc(c['감정']||'')}</span>
+        </div>
+        <div class="rec-grid">
+          ${rows.filter(([,v])=>v).map(([k,v])=>`<div class="rec-cell"><span class="rec-k">${esc(k)}: </span><span class="rec-v">${esc(String(v))}</span></div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>${esc(name)} 프로필 — Grow X SSEL</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard Variable',Pretendard,sans-serif;color:#111827;padding:36px 40px;font-size:13px;background:#fff}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.sub{color:#6B7280;font-size:12px;margin-bottom:24px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.sc{border:1px solid #DDE3EF;border-radius:10px;padding:14px 16px}
+.sc-label{font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.sc-value{font-size:20px;font-weight:700;line-height:1.2}
+.sc-sub{font-size:11px;color:#9CA3AF;margin-top:4px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{border:1px solid #DDE3EF;border-radius:10px;padding:16px}
+.chart-title{font-size:12px;font-weight:600;color:#374151;margin-bottom:12px}
+.pie-wrap{display:flex;align-items:center;gap:16px}
+.pie{width:80px;height:80px;border-radius:50%;flex-shrink:0;background:conic-gradient(${pieStops})}
+.pie-legend{list-style:none;display:flex;flex-direction:column;gap:5px}
+.pie-legend li{display:flex;align-items:center;gap:6px;font-size:11px}
+.pl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pl-count{color:#9CA3AF;margin-left:auto;padding-left:8px}
+.energy-chart{display:flex;align-items:flex-end;gap:6px;height:80px}
+.ec-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%}
+.ec-bar-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
+.ec-bar{width:100%;min-height:3px;border-radius:3px 3px 0 0}
+.ec-val{font-size:10px;color:#6B7280;margin-top:3px}
+.ec-label{font-size:9px;color:#9CA3AF}
+.section-title{font-size:13px;font-weight:700;margin-bottom:12px;border-bottom:1px solid #DDE3EF;padding-bottom:8px;color:#111827}
+.record{border:1px solid #DDE3EF;border-radius:8px;padding:12px 14px;margin-bottom:8px;page-break-inside:avoid}
+.rec-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px}
+.tag-arr{background:#FEF3C7;color:#B45309}
+.tag-dep{background:#DBEAFE;color:#1E40AF}
+.rec-time{font-size:11px;color:#9CA3AF}
+.rec-emo{font-size:12px;font-weight:600;margin-left:auto}
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rec-cell{font-size:11px}
+.rec-k{color:#9CA3AF}
+.rec-v{color:#374151;font-weight:500}
+.footer{margin-top:28px;padding-top:12px;border-top:1px solid #DDE3EF;font-size:10px;color:#9CA3AF;display:flex;justify-content:space-between}
+@media print{@page{margin:20mm}}
+</style>
+</head>
+<body>
+<h1>${esc(name)} 학생 프로필</h1>
+<div class="sub">${esc(SESSION.schoolName||'')} · ${esc(SESSION.className||'')} · 출력일: ${printDate}</div>
+
+<div class="summary">
+  <div class="sc"><div class="sc-label">누적 체크인</div><div class="sc-value">${total}<span style="font-size:13px;font-weight:400"> 회</span></div><div class="sc-sub">등교 ${arrivals.length} · 하교 ${deps.length}</div></div>
+  <div class="sc"><div class="sc-label">대표 감정</div><div class="sc-value" style="color:${emoColor(dominant)};font-size:16px">${esc(dominant)}</div><div class="sc-sub">${emoEntries[0]?.[1]||0}회 등장</div></div>
+  <div class="sc"><div class="sc-label">최근 체크인</div><div class="sc-value" style="font-size:14px">${checkins[0]?esc(String(checkins[0]['제출 시각']).slice(0,16).replace('T',' ')):'—'}</div><div class="sc-sub">${checkins[0]?(checkins[0].type==='arrival'?'등교':'하교')+' · '+esc(checkins[0]['감정']||''):'—'}</div></div>
+  <div class="sc"><div class="sc-label">주요 원인</div><div class="sc-value" style="font-size:14px">${topCauses[0]?.[0]?esc(topCauses[0][0]):'—'}</div><div class="sc-sub">${topCauses.slice(1).map(c=>esc(c[0])).join(' · ')||'—'}</div></div>
+</div>
+
+${(emoEntries.length || energyPoints.length) ? `
+<div class="charts">
+  ${emoEntries.length ? `<div class="chart-card"><div class="chart-title">감정 분포</div><div class="pie-wrap"><div class="pie"></div><ul class="pie-legend">${emoEntries.map(([emo,count])=>`<li><span class="pl-dot" style="background:${emoColor(emo)}"></span><span>${esc(emo)}</span><span class="pl-count">${count}건 · ${Math.round(count/total*100)}%</span></li>`).join('')}</ul></div></div>` : ''}
+  ${energyPoints.length ? `<div class="chart-card"><div class="chart-title">에너지 변화 (최근 등교)</div><div class="energy-chart">${energyPoints.map(p=>`<div class="ec-col"><div class="ec-bar-wrap"><div class="ec-bar" style="height:${(p.val/5)*100}%;background:${barColors[p.val]}"></div></div><div class="ec-val">${p.val}</div><div class="ec-label">${esc(p.label)}</div></div>`).join('')}</div></div>` : ''}
+</div>` : ''}
+
+<div class="section-title">체크인 기록 (${total}건)</div>
+${total === 0 ? '<p style="color:#9CA3AF;font-size:12px;padding:12px 0">기록 없음</p>' : recordsHTML}
+
+<div class="footer">
+  <span>Grow X SSEL · ${esc(SESSION.schoolName||'')} · ${esc(SESSION.className||'')}</span>
+  <span>출력일: ${printDate}</span>
+</div>
+<script>window.onload=function(){window.print();window.onafterprint=function(){window.close()};}<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=960,height=720');
+  if (!win) { alert('팝업이 차단되어 있습니다. 팝업 허용 후 다시 시도해주세요.'); return; }
+  win.document.write(html);
+  win.document.close();
 }
 
 function renderEmotionPie(entries, total) {

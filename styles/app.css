@@ -1542,6 +1542,13 @@ html, body { height: 100%; }
   border-color: var(--twilight-2);
 }
 .tsc-btn--primary:hover { background: var(--twilight-3); border-color: var(--twilight-3); color: #fff; }
+.tsc-btn--export {
+  background: var(--paper-2);
+  color: var(--ink-3);
+  border-color: var(--line);
+  gap: 5px;
+}
+.tsc-btn--export:hover { background: var(--paper-3); border-color: var(--mist-2); color: var(--ink-1); }
 
 /* ── Teacher modals (profile + bulk add) ────── */
 .t-modal {
