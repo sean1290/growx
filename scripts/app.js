@@ -16,16 +16,110 @@ if (!_sess) return;
 const SESSION = _sess;
 const STUDENT_OBJS = [];  // populated async; each: {id, name}
 
+const ARRIVAL_COL_MAP = {
+  valence_arousal:   '에너지',
+  primary_emotion:   '감정',
+  arrival_body_zone: '몸의 위치',
+  cause:             '원인',
+  prayer_plan:       '한 줄 기도',
+};
+const DEPARTURE_COL_MAP = {
+  dep_primary:      '감정',
+  dep_secondary:    '세부 감정',
+  body_zone:        '몸의 위치',
+  reg_strategy:     '조절 전략',
+  social_quality:   '관계',
+  mission_feedback: '미션 피드백',
+  strength_moment:  '자랑스러운 순간',
+  goal:             '내일 다짐',
+  thanksgiving:     '감사',
+};
+
+function paraphraseAnswer(q, val) {
+  if (val === undefined || val === null || val === '') return '';
+  switch (q.type) {
+    case 'arousal': {
+      const labels = ['','아주 낮음','낮음','보통','높음','아주 높음'];
+      return labels[val] || String(val);
+    }
+    case 'emotion_primary': {
+      const e = EMO_PRIMARY.find(x => x.id === val);
+      return e ? e.label : String(val);
+    }
+    case 'emotion_secondary': {
+      for (const arr of Object.values(EMO_SECONDARY)) {
+        const m = arr.find(x => x.id === val);
+        if (m) return m.label;
+      }
+      return String(val);
+    }
+    case 'body': {
+      const arr = Array.isArray(val) ? val : [val];
+      return arr.map(id => {
+        const z = BODY_ZONES.find(x => x.id === id);
+        return z ? z.label : id;
+      }).join(', ');
+    }
+    case 'regulation': {
+      const arr = Array.isArray(val) ? val : [val];
+      return arr.map(id => {
+        const r = REG_STRATEGIES.find(x => x.id === id);
+        return r ? r.name : id;
+      }).join(', ');
+    }
+    case 'chips': {
+      return Array.isArray(val) ? val.join(', ') : String(val);
+    }
+    case 'slider': {
+      const labels = q.labels || [];
+      if (typeof val === 'number') return labels[val] || String(val);
+      return String(val);
+    }
+    case 'text': return String(val);
+    case 'mission_feedback': {
+      if (val && typeof val === 'object') {
+        const parts = [];
+        if (val.status) parts.push(val.status === 'done' ? '✓ 완료' : val.status === 'tried' ? '시도함' : '못함');
+        if (Array.isArray(val.feeling) && val.feeling.length) parts.push(val.feeling.join(', '));
+        if (val.note) parts.push(val.note);
+        return parts.join(' · ');
+      }
+      return String(val);
+    }
+    default: return String(val);
+  }
+}
+
+function buildAnswersPayload(type, ans) {
+  const Q = type === 'arrival' ? Q_ARRIVAL : Q_DEPARTURE;
+  const colMap = type === 'arrival' ? ARRIVAL_COL_MAP : DEPARTURE_COL_MAP;
+  const out = {};
+  Q.forEach(q => {
+    const col = colMap[q.id];
+    if (!col) return; // skip non-answer questions (curation)
+    out[col] = paraphraseAnswer(q, ans[q.id]);
+  });
+  return out;
+}
+
 async function submitCheckInToBackend(type, ans) {
-  const so = STUDENT_OBJS.find(s => s.name === ST.student);
-  if (!so) return; // student device with name not in roster — skip
+  if (!ST.student) return;
+  // Departure check-in: assemble mission_feedback from the scattered ST state
+  const fullAns = { ...ans };
+  if (type === 'departure') {
+    fullAns.mission_feedback = {
+      status:  ST.arrival?.missionStatus || '',
+      feeling: ST.departure?.missionFeeling || [],
+      note:    ST.departure?.missionNote || '',
+    };
+  }
   try {
     await window.GX.api('submitCheckIn', {
-      studentId:   so.id,
-      classId:     SESSION.classId,
-      schoolId:    SESSION.schoolId || '',
+      type,
       studentName: ST.student,
-      type, data: ans,
+      schoolName:  SESSION.schoolName || '',
+      className:   SESSION.className  || '',
+      answers:     buildAnswersPayload(type, fullAns),
     });
   } catch (e) { console.warn('submitCheckIn failed', e); }
 }
@@ -1061,8 +1155,10 @@ async function loadRoster() {
     const res = await window.GX.api('getClassRoster', { classId: SESSION.classId });
     if (res.ok) {
       if (res.classInfo) {
-        SESSION.className = res.classInfo.name;
-        SESSION.grade     = res.classInfo.grade;
+        SESSION.className  = res.classInfo.name;
+        SESSION.grade      = res.classInfo.grade;
+        SESSION.schoolId   = res.classInfo.schoolId   || SESSION.schoolId;
+        SESSION.schoolName = res.classInfo.schoolName || SESSION.schoolName;
       }
       if (res.students) {
         STUDENT_OBJS.length = 0;

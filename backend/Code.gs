@@ -11,7 +11,7 @@ const SUPER_ADMIN = {
 
 // ── One-time setup (run this manually after first paste) ──
 function setup() {
-  ['Schools','Teachers','Classrooms','Students','CheckIns'].forEach(name => _sheet(name));
+  ['Schools','Teachers','Classrooms','Students','ArrivalCheckIns','DepartureCheckIns'].forEach(name => _sheet(name));
   Logger.log('All sheets initialized.');
 }
 
@@ -52,7 +52,8 @@ const HEADERS = {
   Teachers:   ['id','schoolId','classId','name','email','password','createdAt'],
   Classrooms: ['id','schoolId','name','grade','teacherId','createdAt'],
   Students:   ['id','classId','schoolId','name','createdAt'],
-  CheckIns:   ['id','studentId','classId','schoolId','studentName','type','date','data','submittedAt']
+  ArrivalCheckIns:   ['제출 시각','학교','학급','학생','에너지','감정','몸의 위치','원인','한 줄 기도'],
+  DepartureCheckIns: ['제출 시각','학교','학급','학생','감정','세부 감정','몸의 위치','조절 전략','관계','미션 피드백','자랑스러운 순간','내일 다짐','감사']
 };
 
 // ── Sheet helpers ──
@@ -282,7 +283,12 @@ function _getClassRoster(body) {
   const cls = _read('Classrooms').find(c => c.id === body.classId);
   if (!cls) return _json({ ok: false, error: 'Class not found' });
   const students = _read('Students').filter(s => s.classId === body.classId);
-  return _json({ ok: true, classInfo: cls, students });
+  const school = _read('Schools').find(s => s.id === cls.schoolId);
+  return _json({
+    ok: true,
+    classInfo: { id: cls.id, name: cls.name, grade: cls.grade, schoolId: cls.schoolId, schoolName: school ? school.name : '' },
+    students,
+  });
 }
 
 function _addStudent(body) {
@@ -303,28 +309,29 @@ function _deleteStudent(body) {
 }
 
 function _submitCheckIn(body) {
-  const id = 'chk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-  _append('CheckIns', {
-    id,
-    studentId:   body.studentId,
-    classId:     body.classId,
-    schoolId:    body.schoolId || '',
-    studentName: body.studentName || '',
-    type:        body.type,
-    date:        new Date().toISOString().slice(0, 10),
-    data:        typeof body.data === 'string' ? body.data : JSON.stringify(body.data || {}),
-    submittedAt: new Date().toISOString()
-  });
-  return _json({ ok: true, id });
+  const sheetName = body.type === 'arrival' ? 'ArrivalCheckIns' : 'DepartureCheckIns';
+  const ts = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  const row = Object.assign({
+    '제출 시각': ts,
+    '학교':      body.schoolName || '',
+    '학급':      body.className || '',
+    '학생':      body.studentName || '',
+  }, body.answers || {});
+  _append(sheetName, row);
+  return _json({ ok: true });
 }
 
 function _getClassCheckIns(body) {
-  let rows = _read('CheckIns').filter(c => c.classId === body.classId);
-  if (body.date) rows = rows.filter(c => c.date === body.date);
-  return _json({ ok: true, checkins: rows });
+  // Read from both sheets and tag with type
+  const arrivals = _read('ArrivalCheckIns').map(r => Object.assign({ type:'arrival' }, r));
+  const deps     = _read('DepartureCheckIns').map(r => Object.assign({ type:'departure' }, r));
+  const all = arrivals.concat(deps).filter(r => r['학급'] === body.className);
+  return _json({ ok: true, checkins: all });
 }
 
 function _getStudentCheckIns(body) {
-  const rows = _read('CheckIns').filter(c => c.studentId === body.studentId);
-  return _json({ ok: true, checkins: rows });
+  const arrivals = _read('ArrivalCheckIns').map(r => Object.assign({ type:'arrival' }, r));
+  const deps     = _read('DepartureCheckIns').map(r => Object.assign({ type:'departure' }, r));
+  const all = arrivals.concat(deps).filter(r => r['학생'] === body.studentName);
+  return _json({ ok: true, checkins: all });
 }
