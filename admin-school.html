@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grow X SSEL · 학교 프로필</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/admin.css">
+</head>
+<body class="admin-body">
+
+<header class="adm-header">
+  <div class="adm-logo">
+    <span>Grow <span class="brand-x">X</span></span>
+    <span class="brand-suf">SSEL · OPS</span>
+  </div>
+
+  <div class="adm-school-badge">
+    <span class="dot"></span>
+    <span>Grow X 운영팀</span>
+  </div>
+
+  <button class="adm-logout" id="adm-logout">로그아웃</button>
+</header>
+
+<main class="adm-main">
+
+  <a href="admin.html" style="font-size:13px;color:var(--fg-mute);text-decoration:none;align-self:flex-start">← 운영팀 대시보드로</a>
+
+  <div class="adm-page-head">
+    <div>
+      <div class="adm-eyebrow" id="asp-eyebrow">학교 프로필</div>
+      <h1 class="adm-page-title" id="asp-title">불러오는 중…</h1>
+      <div class="adm-date" id="asp-sub" style="margin-top:6px">—</div>
+    </div>
+    <span class="rc-status rc-status--approved" id="asp-status" style="font-size:12px">—</span>
+  </div>
+
+  <div class="adm-stats">
+    <div class="adm-stat">
+      <div class="adm-stat-label">학급</div>
+      <div class="adm-stat-value" id="asp-classes">—</div>
+      <div class="adm-stat-sub">등록된 학급 수</div>
+    </div>
+    <div class="adm-stat">
+      <div class="adm-stat-label">교사</div>
+      <div class="adm-stat-value" id="asp-teachers">—</div>
+      <div class="adm-stat-sub">담임 수</div>
+    </div>
+    <div class="adm-stat adm-stat--accent">
+      <div class="adm-stat-label">학생</div>
+      <div class="adm-stat-value" id="asp-students">—</div>
+      <div class="adm-stat-sub">등록된 학생</div>
+    </div>
+    <div class="adm-stat">
+      <div class="adm-stat-label">누적 체크인</div>
+      <div class="adm-stat-value" id="asp-checkins">—</div>
+      <div class="adm-stat-sub" id="asp-checkin-sub">등교+하교</div>
+    </div>
+  </div>
+
+  <div id="asp-info-section">
+    <div class="adm-section-head">
+      <h2 class="adm-section-title">학교 정보</h2>
+    </div>
+    <div class="reg-card reg-card--approved" id="asp-info-card">
+      <div class="rc-info" id="asp-info-grid"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="adm-section-head">
+      <h2 class="adm-section-title">학급별 현황</h2>
+    </div>
+    <div class="adm-class-grid" id="asp-class-grid"></div>
+  </div>
+
+  <div>
+    <div class="adm-section-head">
+      <h2 class="adm-section-title">최근 체크인 활동 <span id="asp-recent-count" style="font-size:12px;font-weight:500;color:var(--fg-mute);margin-left:8px"></span></h2>
+    </div>
+    <div id="asp-recent-list"></div>
+  </div>
+
+</main>
+
+<script src="scripts/auth.js"></script>
+<script src="scripts/admin-school.js"></script>
+</body>
+</html>

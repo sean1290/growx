@@ -65,6 +65,11 @@ function render(rows) {
     approvedList.innerHTML = `<div class="reg-empty">아직 승인된 학교가 없습니다.</div>`;
   } else {
     approvedList.innerHTML = approved.map(approvedCardHTML).join('');
+    approvedList.querySelectorAll('[data-school-id]').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.href = 'admin-school.html?id=' + encodeURIComponent(card.dataset.schoolId);
+      });
+    });
   }
 }
 
@@ -96,7 +101,7 @@ function regCardHTML(r) {
 function approvedCardHTML(r) {
   const date = r.decidedAt ? new Date(r.decidedAt).toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'}) : '—';
   return `
-    <div class="reg-card reg-card--approved">
+    <div class="reg-card reg-card--approved reg-card--clickable" data-school-id="${esc(r.id)}">
       <div class="rc-top">
         <div>
           <div class="rc-school">${esc(r.name)}</div>

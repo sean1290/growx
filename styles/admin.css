@@ -585,6 +585,56 @@ html, body { height: 100%; }
   border-radius: var(--r-lg);
 }
 
+/* ── School profile activity table ──────────── */
+.asp-activity {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.asp-activity th {
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--paper-1);
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.asp-activity td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.asp-activity tr:last-child td { border-bottom: none; }
+.asp-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+}
+.asp-tag--arrival   { background: #FEF3C7; color: #B45309; }
+.asp-tag--departure { background: #DBEAFE; color: #1E40AF; }
+
+.reg-card--clickable {
+  cursor: pointer;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.reg-card--clickable:hover {
+  border-color: var(--twilight-2);
+  box-shadow: var(--shadow-2);
+}
+.reg-card--clickable .rc-school::after {
+  content: ' →';
+  color: var(--twilight-2);
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+.reg-card--clickable:hover .rc-school::after { opacity: 1; }
+
 /* ── Responsive ──────────────────────────────── */
 @media (max-width: 900px) {
   .adm-stats { grid-template-columns: repeat(2, 1fr); }

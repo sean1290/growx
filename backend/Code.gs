@@ -39,6 +39,7 @@ function doPost(e) {
     if (a === 'submitCheckIn')      return _submitCheckIn(body);
     if (a === 'getClassCheckIns')   return _getClassCheckIns(body);
     if (a === 'getStudentCheckIns') return _getStudentCheckIns(body);
+    if (a === 'getSchoolProfile')   return _getSchoolProfile(body);
 
     return _json({ ok: false, error: 'Unknown action: ' + a });
   } catch (err) {
@@ -334,4 +335,26 @@ function _getStudentCheckIns(body) {
   const deps     = _read('DepartureCheckIns').map(r => Object.assign({ type:'departure' }, r));
   const all = arrivals.concat(deps).filter(r => r['학생'] === body.studentName);
   return _json({ ok: true, checkins: all });
+}
+
+function _getSchoolProfile(body) {
+  const school = _read('Schools').find(s => s.id === body.schoolId);
+  if (!school) return _json({ ok: false, error: 'School not found' });
+
+  const teachers   = _read('Teachers').filter(t => t.schoolId === body.schoolId);
+  const classrooms = _read('Classrooms').filter(c => c.schoolId === body.schoolId);
+  const students   = _read('Students').filter(s => s.schoolId === body.schoolId);
+
+  const arrivals = _read('ArrivalCheckIns').map(r => Object.assign({ type:'arrival' }, r));
+  const deps     = _read('DepartureCheckIns').map(r => Object.assign({ type:'departure' }, r));
+  const checkins = arrivals.concat(deps)
+    .filter(r => r['학교'] === school.name)
+    .sort((a, b) => String(b['제출 시각']).localeCompare(String(a['제출 시각'])));
+
+  return _json({
+    ok: true,
+    school, teachers, classrooms, students,
+    recentCheckIns: checkins.slice(0, 30),
+    totalCheckIns:  checkins.length,
+  });
 }
