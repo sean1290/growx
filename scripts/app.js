@@ -963,7 +963,6 @@ function paintTeacher() {
       <div class="tsh-title">학생 목록 (${STUDENTS.length}명)</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="t-add-btn" id="t-add-student">+ 학생 추가</button>
-        ${STUDENTS.length ? `<button class="t-share-btn" id="t-share-link" title="학생 디바이스용 링크">📱 학생용 링크</button>` : ''}
       </div>
     </div>
 
@@ -978,16 +977,8 @@ function paintTeacher() {
   // Card click → open profile modal
   $('#view-teacher').querySelectorAll('[data-open-profile]').forEach(el => {
     el.addEventListener('click', e => {
-      if (e.target.closest('[data-checkin]') || e.target.closest('[data-delete]')) return;
+      if (e.target.closest('[data-delete]')) return;
       openStudentProfile(el.dataset.openProfile);
-    });
-  });
-  $('#view-teacher').querySelectorAll('[data-checkin]').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      ST.student = btn.dataset.checkin;
-      ST.arrival = { step:0, ans:{}, missionShown:false, missionStatus:null };
-      switchView('home');
     });
   });
   $('#view-teacher').querySelectorAll('[data-delete]').forEach(btn => {
@@ -1009,11 +1000,6 @@ function paintTeacher() {
   });
 
   $('#t-add-student')?.addEventListener('click', openBulkAddModal);
-
-  $('#t-share-link')?.addEventListener('click', () => {
-    const url = `${location.origin}/student.html?class=${encodeURIComponent(SESSION.classId)}`;
-    navigator.clipboard.writeText(url).then(() => toast('학생용 링크가 복사되었습니다 ✓')).catch(() => prompt('학생 디바이스에서 이 URL을 열어주세요:', url));
-  });
 }
 
 function renderStudentCard(name) {
@@ -1040,8 +1026,7 @@ function renderStudentCard(name) {
       </div>
       <div class="tsc-mid">${statusTag}</div>
       <div class="tsc-actions">
-        <button class="tsc-btn" data-open-profile="${esc(name)}">프로필 보기</button>
-        <button class="tsc-btn tsc-btn--primary" data-checkin="${esc(name)}">체크인 시작 →</button>
+        <button class="tsc-btn tsc-btn--primary" data-open-profile="${esc(name)}">프로필 보기</button>
       </div>
     </div>`;
 }
@@ -1134,7 +1119,6 @@ async function openStudentProfile(name) {
 
     <div class="sp-section-head">
       <h3>체크인 기록 (${total}건)</h3>
-      <button class="tsc-btn tsc-btn--primary" data-modal-checkin="${esc(name)}">+ 새 체크인 시작 →</button>
     </div>
 
     ${total === 0
@@ -1142,12 +1126,6 @@ async function openStudentProfile(name) {
       : `<div class="sp-history">${checkins.map(checkinRowHTML).join('')}</div>`}
   `;
 
-  body.querySelector('[data-modal-checkin]')?.addEventListener('click', () => {
-    ST.student = name;
-    ST.arrival = { step:0, ans:{}, missionShown:false, missionStatus:null };
-    close();
-    switchView('home');
-  });
 }
 
 function renderEmotionPie(entries, total) {
@@ -1342,13 +1320,22 @@ async function init() {
   await loadRoster();
 
   if (SESSION.role === 'student') {
-    // Student mode: show class badge, hide teacher button
+    // Student mode: show class badge, hide teacher/checkin header buttons
     const badge = $('#student-class-badge');
     if (badge) badge.textContent = SESSION.className || '';
     $('#open-teacher')?.style && ($('#open-teacher').style.display = 'none');
+    $('#open-checkin')?.style && ($('#open-checkin').style.display = 'none');
     switchView('home');
     return;
   }
+
+  $('#open-checkin')?.addEventListener('click', () => {
+    const base = location.href.replace(/\/[^/]*(\?.*)?$/, '');
+    const url = `${base}/student.html?class=${encodeURIComponent(SESSION.classId || '')}`;
+    navigator.clipboard.writeText(url)
+      .then(() => toast('학생 체크인 링크가 복사되었습니다 ✓'))
+      .catch(() => prompt('학생 디바이스에서 이 URL을 열어주세요:', url));
+  });
 
   // Auth: teacher header button now goes directly to teacher dashboard
   $('#open-teacher')?.addEventListener('click', () => {

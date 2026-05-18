@@ -125,6 +125,26 @@ html, body { height: 100%; }
 }
 .header-teacher .ht-icon { display: inline-flex; }
 
+.header-checkin {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--ink-1);
+  border: 1px solid var(--ink-1);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--bone);
+  cursor: pointer;
+  transition: all var(--dur-base) var(--ease-out);
+}
+.header-checkin:hover {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+
 /* ════════════════════════════════════════════
    MAIN
    ════════════════════════════════════════════ */
