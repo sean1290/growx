@@ -898,171 +898,105 @@ function renderArrivalMission() {
 // TEACHER VIEW
 // ════════════════════════════════════════════════════════════
 
-// Mock per-student check-in data (keyed by name)
-const MOCK_STUDENT_DATA = {};  // populated from real check-ins later
+let CLASS_CHECKINS = [];   // hydrated from backend on each renderTeacher
 
-let _selectedStudent = null;
+const EMO_COLORS = {
+  '기쁨·감사':'#F59E0B','평온·안정':'#0284C7','무거움·슬픔':'#9333EA',
+  '불안·걱정':'#F43F5E','짜증·화남':'#EF4444','무감각·피곤':'#94A3B8',
+};
+function emoColor(label) { return EMO_COLORS[label] || '#94A3B8'; }
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function startedToday(ts) { return String(ts || '').startsWith(todayStr()); }
+
+async function loadClassCheckIns() {
+  try {
+    const res = await window.GX.api('getClassCheckIns', { className: SESSION.className });
+    CLASS_CHECKINS = res.ok ? (res.checkins || []) : [];
+    // newest first by 제출 시각
+    CLASS_CHECKINS.sort((a,b) => String(b['제출 시각']).localeCompare(String(a['제출 시각'])));
+  } catch (e) { console.warn('checkins load failed', e); CLASS_CHECKINS = []; }
+}
+
+function studentSummary(name) {
+  const all = CLASS_CHECKINS.filter(c => c['학생'] === name);
+  const today = all.filter(c => startedToday(c['제출 시각']));
+  const todayArrival = today.find(c => c.type === 'arrival');
+  const todayDeparture = today.find(c => c.type === 'departure');
+  const lastEmotion = all[0]?.['감정'] || '';
+  return { all, today, todayArrival, todayDeparture, lastEmotion };
+}
 
 function renderTeacher() {
-  const high    = MOCK_ALERTS.filter(a => a.level === 'high');
-  const watch   = MOCK_ALERTS.filter(a => a.level === 'watch');
-  const todayStr = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
-  const checkedIn = STUDENTS.filter(s => MOCK_STUDENT_DATA[s]?.checkedIn).length;
+  // Render shell synchronously; hydrate via loadClassCheckIns()
+  paintTeacher();
+  loadClassCheckIns().then(paintTeacher);
+}
 
-  const studentRows = STUDENTS.map(name => {
-    const d   = MOCK_STUDENT_DATA[name] || {};
-    const isSel = _selectedStudent === name;
-    const riskTag = d.risk === 'high'
-      ? `<span class="sp-risk sp-risk--high">긴급</span>`
-      : d.risk === 'watch'
-      ? `<span class="sp-risk sp-risk--watch">관찰</span>`
-      : '';
-    return `
-      <div class="sp-row ${isSel ? 'is-selected' : ''} ${!d.checkedIn ? 'sp-row--absent' : ''}" data-student="${esc(name)}">
-        <div class="sp-avatar" style="background:${d.checkedIn ? d.emoColor+'22' : 'var(--paper-2)'}; color:${d.checkedIn ? d.emoColor : 'var(--fg-mute)'}">
-          ${esc(name[0])}
-        </div>
-        <div class="sp-info">
-          <div class="sp-name">${esc(name)} ${riskTag}</div>
-          <div class="sp-status">${d.checkedIn ? esc(d.emo) : '미체크인'}</div>
-        </div>
-        <button class="sp-checkin-btn" data-checkin="${esc(name)}" title="${esc(name)} 체크인 열기">→</button>
-      </div>`;
-  }).join('');
-
-  const profilePanel = _selectedStudent ? renderStudentProfile(_selectedStudent) : `
-    <div class="sp-empty">
-      <div class="spe-icon">👆</div>
-      <div class="spe-text">왼쪽에서 학생을 클릭하면<br>상세 정보를 볼 수 있어요</div>
-    </div>`;
+function paintTeacher() {
+  const todayDate = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  const arrivalsToday   = CLASS_CHECKINS.filter(c => c.type==='arrival'   && startedToday(c['제출 시각'])).length;
+  const departuresToday = CLASS_CHECKINS.filter(c => c.type==='departure' && startedToday(c['제출 시각'])).length;
+  const totalCheckIns   = CLASS_CHECKINS.length;
+  const checkedInToday  = new Set(CLASS_CHECKINS.filter(c => startedToday(c['제출 시각'])).map(c => c['학생'])).size;
 
   $('#view-teacher').innerHTML = `
     <div class="view-head">
       <div>
-        <div class="vh-eyebrow">교사 대시보드 · ${esc(todayStr)}</div>
-        <h1 class="vh-title">${esc(SESSION.className)} <em>정서 흐름</em></h1>
-        <p class="vh-sub">오늘 등·하교 체크인 결과와 위험 신호를 한눈에 확인하세요.</p>
+        <div class="vh-eyebrow">교사 대시보드 · ${esc(todayDate)}</div>
+        <h1 class="vh-title">${esc(SESSION.className || '')} <em>정서 흐름</em></h1>
+        <p class="vh-sub">학생을 클릭하면 개별 체크인 기록과 요약 그래프를 볼 수 있어요.</p>
       </div>
       <div class="vh-aside">
         <span class="num">${STUDENTS.length}명</span>
-        <span>${esc(SESSION.className)} · ${esc(SESSION.teacherName)} 담임</span>
+        <span>${esc(SESSION.className || '')}${SESSION.teacherName ? ' · ' + esc(SESSION.teacherName) + ' 담임' : ''}</span>
       </div>
     </div>
 
-    <div class="teacher">
-      <div class="t-col">
+    <div class="t-kpi">
+      <div class="kpi"><div class="k-label">오늘 참여</div><div class="k-value"><em>${checkedInToday}</em><span style="font-size:14px;color:var(--fg-mute)"> / ${STUDENTS.length}</span></div><div class="k-hint">고유 학생 수</div></div>
+      <div class="kpi"><div class="k-label">오늘 등교 체크인</div><div class="k-value" style="color:#B45309"><em>${arrivalsToday}</em></div><div class="k-hint">건</div></div>
+      <div class="kpi"><div class="k-label">오늘 하교 체크인</div><div class="k-value" style="color:#1E40AF"><em>${departuresToday}</em></div><div class="k-hint">건</div></div>
+      <div class="kpi"><div class="k-label">누적 체크인</div><div class="k-value"><em>${totalCheckIns}</em></div><div class="k-hint">전체 기록</div></div>
+    </div>
 
-        <!-- KPI row -->
-        <div class="t-kpi">
-          <div class="kpi">
-            <div class="k-label">오늘 참여</div>
-            <div class="k-value"><em>${checkedIn}</em><span style="font-size:14px;color:var(--fg-mute)"> / ${STUDENTS.length}</span></div>
-            <div class="k-hint">등교 + 하교 합산</div>
-          </div>
-          <div class="kpi">
-            <div class="k-label">관심 필요</div>
-            <div class="k-value" style="color:#EF4444"><em>${high.length}</em><span style="font-size:14px;color:var(--fg-mute)"> 긴급</span></div>
-            <div class="k-hint">${watch.length}명 관찰 대상 포함</div>
-          </div>
-          <div class="kpi">
-            <div class="k-label">적응적 전략</div>
-            <div class="k-value"><em>78</em><span style="font-size:14px;color:var(--fg-mute)">%</span></div>
-            <div class="k-hint">기도·말씀·심호흡 비율</div>
-          </div>
-          <div class="kpi">
-            <div class="k-label">미션 완료</div>
-            <div class="k-value"><em>${STUDENTS.filter(s=>MOCK_STUDENT_DATA[s]?.missionDone).length}</em><span style="font-size:14px;color:var(--fg-mute)"> / ${STUDENTS.length}</span></div>
-            <div class="k-hint">금일 ${esc(todayAxis().ko)} 미션</div>
-          </div>
-        </div>
-
-        <!-- Alerts -->
-        <div>
-          <div class="t-section-head">
-            <div class="tsh-title">관심이 필요한 학생</div>
-            <div class="tsh-sub">자동 감지</div>
-          </div>
-          ${MOCK_ALERTS.map(a => `
-            <div class="alert is-${a.level}">
-              <div class="a-avatar">${esc(a.name[0])}</div>
-              <div class="a-body">
-                <div class="a-name">${esc(a.name)}</div>
-                <div class="a-signal">신호: <b>${esc(a.label)}</b> · 권장 ${esc(a.action)}</div>
-              </div>
-              <span class="a-tag">${a.level==='high'?'긴급':'관찰'}</span>
-            </div>`).join('')}
-        </div>
-
-        <!-- Class pulse -->
-        <div class="class-pulse">
-          <div class="cp-label">반 전체 감정 분포 · 오늘</div>
-          ${MOCK_CLASS_PULSE.map(p => `
-            <div class="cp-row">
-              <div>${p.name}</div>
-              <div style="display:flex;align-items:center;gap:10px">
-                <div class="cp-bar"><div class="cp-fill" style="width:${p.pct*2}%;background:${p.color}"></div></div>
-                <div class="cp-pct">${p.pct}%</div>
-              </div>
-            </div>`).join('')}
-        </div>
-
+    <div class="t-section-head" style="margin-top:28px;margin-bottom:14px">
+      <div class="tsh-title">학생 목록 (${STUDENTS.length}명)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="t-add-btn" id="t-add-student">+ 학생 추가</button>
+        ${STUDENTS.length ? `<button class="t-share-btn" id="t-share-link" title="학생 디바이스용 링크">📱 학생용 링크</button>` : ''}
       </div>
+    </div>
 
-      <div class="t-col">
+    ${STUDENTS.length
+      ? `<div class="t-student-grid">${STUDENTS.map(renderStudentCard).join('')}</div>`
+      : `<div class="t-empty">아직 학생이 없습니다.<br>위 <b>+ 학생 추가</b> 버튼으로 학생을 등록해주세요.</div>`}
 
-        <!-- Student list + profile -->
-        <div class="t-section-head" style="margin-bottom:10px">
-          <div class="tsh-title">학생 목록 (${STUDENTS.length}명)</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span class="tsh-sub">학생 클릭 → 개별 프로필</span>
-            <button class="t-add-btn" id="t-add-student">+ 학생 추가</button>
-            ${STUDENTS.length ? `<button class="t-share-btn" id="t-share-link" title="학생 디바이스용 링크">📱 학생용 링크</button>` : ''}
-          </div>
-        </div>
-
-        <div class="t-student-panel">
-          <div class="sp-list">${STUDENTS.length ? studentRows : `<div style="padding:30px 20px;text-align:center;color:var(--fg-mute);font-size:13px">아직 학생이 없습니다.<br>위 <b>+ 학생 추가</b> 버튼으로 학생을 등록해주세요.</div>`}</div>
-          <div class="sp-profile" id="sp-profile">${profilePanel}</div>
-        </div>
-
-        <!-- Axes -->
-        <div class="t-axes" style="margin-top:20px">
-          <div class="t-section-head" style="margin-bottom:14px">
-            <div class="tsh-title" style="font-size:16px">반 평균 5축 SSEL</div>
-            <div class="tsh-sub">이번 주</div>
-          </div>
-          <div class="ra-rows">
-            ${MOCK_AXES_WEEK.map(d => `
-              <div class="ra-row" style="--rr-c:${d.color}">
-                <div class="rr-name">${d.name}</div>
-                <div class="rr-track"><div class="rr-fill" style="width:${d.pct}%"></div></div>
-                <div class="rr-val">${d.pct}<span class="pct">%</span></div>
-              </div>`).join('')}
-          </div>
-        </div>
-
-        <div class="cim-actions" style="padding-top:0;border:0;justify-content:flex-end">
-          <button class="appbtn appbtn--ghost" id="t-logout">${SESSION.adminBack ? '← 관리자로 돌아가기' : '로그아웃'}</button>
-        </div>
-      </div>
+    <div class="cim-actions" style="padding-top:24px;border:0;justify-content:flex-end">
+      <button class="appbtn appbtn--ghost" id="t-logout">${SESSION.adminBack ? '← 관리자로 돌아가기' : '로그아웃'}</button>
     </div>`;
 
-  // Student row click → show profile
-  $('#view-teacher').querySelectorAll('.sp-row').forEach(row => {
-    row.addEventListener('click', e => {
-      if (e.target.closest('.sp-checkin-btn')) return;
-      _selectedStudent = row.dataset.student;
-      renderTeacher();
+  // Card click → open profile modal
+  $('#view-teacher').querySelectorAll('[data-open-profile]').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.closest('[data-checkin]') || e.target.closest('[data-delete]')) return;
+      openStudentProfile(el.dataset.openProfile);
     });
   });
-
-  // Check-in buttons (list + profile panel) → open student check-in
   $('#view-teacher').querySelectorAll('[data-checkin]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       ST.student = btn.dataset.checkin;
       ST.arrival = { step:0, ans:{}, missionShown:false, missionStatus:null };
       switchView('home');
+    });
+  });
+  $('#view-teacher').querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const name = btn.dataset.delete;
+      if (!confirm(`${name} 학생을 삭제하시겠습니까? 이 학생의 체크인 기록은 시트에 남습니다.`)) return;
+      const ok = await deleteStudentFromBackend(name);
+      if (ok) renderTeacher();
     });
   });
 
@@ -1074,12 +1008,7 @@ function renderTeacher() {
     }
   });
 
-  $('#t-add-student')?.addEventListener('click', async () => {
-    const name = prompt('추가할 학생 이름을 입력하세요:');
-    if (!name || !name.trim()) return;
-    const ok = await addStudentToBackend(name.trim());
-    if (ok) renderTeacher();
-  });
+  $('#t-add-student')?.addEventListener('click', openBulkAddModal);
 
   $('#t-share-link')?.addEventListener('click', () => {
     const url = `${location.origin}/student.html?class=${encodeURIComponent(SESSION.classId)}`;
@@ -1087,49 +1016,286 @@ function renderTeacher() {
   });
 }
 
-function renderStudentProfile(name) {
-  const d = MOCK_STUDENT_DATA[name];
-  if (!d) return '';
-  const riskColor = d.risk === 'high' ? '#EF4444' : d.risk === 'watch' ? '#D97706' : 'var(--grow-2)';
-  const riskLabel = d.risk === 'high' ? '긴급 관심' : d.risk === 'watch' ? '관찰 중' : '양호';
+function renderStudentCard(name) {
+  const s = studentSummary(name);
+  const last = s.all[0];
+  const color = s.lastEmotion ? emoColor(s.lastEmotion) : '#94A3B8';
+  const cnt = s.all.length;
+  const statusTag = s.todayArrival && s.todayDeparture
+    ? `<span class="tsc-tag tsc-tag--both">등교+하교 ✓</span>`
+    : s.todayArrival
+    ? `<span class="tsc-tag tsc-tag--arrival">등교 ✓</span>`
+    : s.todayDeparture
+    ? `<span class="tsc-tag tsc-tag--departure">하교 ✓</span>`
+    : `<span class="tsc-tag tsc-tag--none">오늘 미체크인</span>`;
   return `
-    <div class="spp-inner">
-      <div class="spp-head">
-        <div class="spp-avatar" style="background:${d.emoColor}22; color:${d.emoColor}">${esc(name[0])}</div>
-        <div>
-          <div class="spp-name">${esc(name)}</div>
-          <div class="spp-class">${esc(SESSION.className)}</div>
+    <div class="t-student-card" data-open-profile="${esc(name)}">
+      <div class="tsc-head">
+        <div class="tsc-avatar" style="background:${color}22;color:${color}">${esc(name[0])}</div>
+        <div class="tsc-name-wrap">
+          <div class="tsc-name">${esc(name)}</div>
+          <div class="tsc-meta">총 ${cnt}회 체크인${last ? ' · 최근 ' + esc(last['감정'] || '') : ''}</div>
         </div>
-        <span class="spp-status" style="color:${riskColor};border-color:${riskColor}30;background:${riskColor}0d">${riskLabel}</span>
+        <button class="tsc-delete" data-delete="${esc(name)}" title="삭제">×</button>
       </div>
-
-      <div class="spp-rows">
-        <div class="spp-row">
-          <span class="spr-label">등교 감정</span>
-          <span class="spr-val" style="color:${d.emoColor}">${d.checkedIn ? esc(d.emo) : '—'}</span>
-        </div>
-        <div class="spp-row">
-          <span class="spr-label">신체 자각</span>
-          <span class="spr-val">${d.checkedIn ? esc(d.zone) : '—'}</span>
-        </div>
-        <div class="spp-row">
-          <span class="spr-label">원인</span>
-          <span class="spr-val">${d.checkedIn ? esc(d.cause) : '—'}</span>
-        </div>
-        <div class="spp-row">
-          <span class="spr-label">등교 시각</span>
-          <span class="spr-val">${d.checkedIn ? esc(d.arrivalTime) : '미체크인'}</span>
-        </div>
-        <div class="spp-row">
-          <span class="spr-label">미션 완료</span>
-          <span class="spr-val">${d.missionDone ? '✓ 완료' : '미완료'}</span>
-        </div>
+      <div class="tsc-mid">${statusTag}</div>
+      <div class="tsc-actions">
+        <button class="tsc-btn" data-open-profile="${esc(name)}">프로필 보기</button>
+        <button class="tsc-btn tsc-btn--primary" data-checkin="${esc(name)}">체크인 시작 →</button>
       </div>
-
-      <button class="spp-open-btn" data-checkin="${esc(name)}">
-        ${esc(name)} 체크인 열기 →
-      </button>
     </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// STUDENT PROFILE MODAL
+// ════════════════════════════════════════════════════════════
+
+async function openStudentProfile(name) {
+  const mount = $('#t-modal-mount');
+  mount.innerHTML = `
+    <div class="t-modal" id="sp-modal">
+      <div class="t-modal-backdrop"></div>
+      <div class="t-modal-card t-modal-card--xl">
+        <div class="t-modal-head">
+          <h2 id="sp-modal-title">${esc(name)} 프로필</h2>
+          <button class="t-modal-close">×</button>
+        </div>
+        <div class="t-modal-body" id="sp-modal-body">
+          <div style="padding:40px;text-align:center;color:var(--fg-mute)">불러오는 중…</div>
+        </div>
+      </div>
+    </div>`;
+  const close = () => mount.innerHTML = '';
+  mount.querySelector('.t-modal-close').addEventListener('click', close);
+  mount.querySelector('.t-modal-backdrop').addEventListener('click', close);
+
+  let checkins = [];
+  try {
+    const res = await window.GX.api('getStudentCheckIns', { studentName: name });
+    checkins = res.ok ? (res.checkins || []) : [];
+    checkins.sort((a,b) => String(b['제출 시각']).localeCompare(String(a['제출 시각'])));
+  } catch (e) {
+    $('#sp-modal-body').innerHTML = `<div style="padding:40px;text-align:center;color:#EF4444">불러오기 실패: ${esc(e.message)}</div>`;
+    return;
+  }
+
+  const arrivals = checkins.filter(c => c.type === 'arrival');
+  const deps     = checkins.filter(c => c.type === 'departure');
+  const total = checkins.length;
+
+  // Emotion distribution
+  const emoCounts = {};
+  checkins.forEach(c => { const e = c['감정']; if (e) emoCounts[e] = (emoCounts[e]||0) + 1; });
+  const emoEntries = Object.entries(emoCounts).sort((a,b) => b[1] - a[1]);
+  const dominant = emoEntries[0]?.[0] || '—';
+
+  // Energy timeline (last 10 arrivals, oldest→newest)
+  const energyLabels = ['', '아주 낮음','낮음','보통','높음','아주 높음'];
+  const energyTimeline = arrivals.slice(0,10).reverse().map(a => ({
+    label: String(a['제출 시각'] || '').slice(5,10).replace('-','/'),
+    val: energyLabels.indexOf(a['에너지']) || 0,
+    raw: a['에너지'] || '',
+  })).filter(e => e.val > 0);
+
+  // Cause / relationship signals
+  const causeCounts = {};
+  arrivals.forEach(a => { const c = a['원인']; if (c) causeCounts[c] = (causeCounts[c]||0) + 1; });
+  const topCauses = Object.entries(causeCounts).sort((a,b) => b[1]-a[1]).slice(0,3);
+
+  const body = $('#sp-modal-body');
+  body.innerHTML = `
+    <div class="sp-summary">
+      <div class="sp-summary-card">
+        <div class="ssc-label">누적 체크인</div>
+        <div class="ssc-value">${total}<span class="ssc-unit">회</span></div>
+        <div class="ssc-sub">등교 ${arrivals.length} · 하교 ${deps.length}</div>
+      </div>
+      <div class="sp-summary-card">
+        <div class="ssc-label">대표 감정</div>
+        <div class="ssc-value" style="color:${emoColor(dominant)};font-size:20px;line-height:1.3">${esc(dominant)}</div>
+        <div class="ssc-sub">${emoEntries[0]?.[1] || 0}회 등장</div>
+      </div>
+      <div class="sp-summary-card">
+        <div class="ssc-label">최근 체크인</div>
+        <div class="ssc-value" style="font-size:18px;line-height:1.3">${checkins[0] ? esc(String(checkins[0]['제출 시각']).slice(0,16).replace('T',' ')) : '—'}</div>
+        <div class="ssc-sub">${checkins[0] ? (checkins[0].type === 'arrival' ? '등교' : '하교') + ' · ' + esc(checkins[0]['감정'] || '') : '—'}</div>
+      </div>
+      <div class="sp-summary-card">
+        <div class="ssc-label">주요 원인</div>
+        <div class="ssc-value" style="font-size:16px;line-height:1.3">${topCauses[0]?.[0] ? esc(topCauses[0][0]) : '—'}</div>
+        <div class="ssc-sub">${topCauses.slice(1).map(c => esc(c[0])).join(' · ') || '—'}</div>
+      </div>
+    </div>
+
+    <div class="sp-charts">
+      ${emoEntries.length ? renderEmotionPie(emoEntries, total) : ''}
+      ${energyTimeline.length ? renderEnergyChart(energyTimeline) : ''}
+    </div>
+
+    <div class="sp-section-head">
+      <h3>체크인 기록 (${total}건)</h3>
+      <button class="tsc-btn tsc-btn--primary" data-modal-checkin="${esc(name)}">+ 새 체크인 시작 →</button>
+    </div>
+
+    ${total === 0
+      ? `<div class="sp-empty">아직 체크인 기록이 없습니다.</div>`
+      : `<div class="sp-history">${checkins.map(checkinRowHTML).join('')}</div>`}
+  `;
+
+  body.querySelector('[data-modal-checkin]')?.addEventListener('click', () => {
+    ST.student = name;
+    ST.arrival = { step:0, ans:{}, missionShown:false, missionStatus:null };
+    close();
+    switchView('home');
+  });
+}
+
+function renderEmotionPie(entries, total) {
+  let acc = 0;
+  const stops = entries.map(([emo, count]) => {
+    const start = (acc / total) * 100;
+    acc += count;
+    const end = (acc / total) * 100;
+    return `${emoColor(emo)} ${start}% ${end}%`;
+  }).join(', ');
+  const legend = entries.map(([emo, count]) => `
+    <li>
+      <span class="pl-dot" style="background:${emoColor(emo)}"></span>
+      <span class="pl-label">${esc(emo)}</span>
+      <span class="pl-count">${count}건 · ${Math.round(count/total*100)}%</span>
+    </li>`).join('');
+  return `
+    <div class="sp-chart-card">
+      <div class="scc-title">감정 분포</div>
+      <div class="pie-wrap">
+        <div class="pie" style="background: conic-gradient(${stops})"></div>
+        <ul class="pie-legend">${legend}</ul>
+      </div>
+    </div>`;
+}
+
+function renderEnergyChart(points) {
+  const max = 5;
+  const colors = ['', '#94A3B8','#94A3B8','#0284C7','#22C55E','#F59E0B'];
+  return `
+    <div class="sp-chart-card">
+      <div class="scc-title">에너지 변화 (최근 등교 체크인)</div>
+      <div class="energy-chart">
+        ${points.map(p => `
+          <div class="ec-col">
+            <div class="ec-bar-wrap"><div class="ec-bar" style="height:${(p.val/max)*100}%;background:${colors[p.val]}"></div></div>
+            <div class="ec-val">${p.val}</div>
+            <div class="ec-label">${esc(p.label)}</div>
+          </div>`).join('')}
+      </div>
+      <div class="ec-axis">1 = 아주 낮음 · 5 = 아주 높음</div>
+    </div>`;
+}
+
+function checkinRowHTML(c) {
+  const ts = String(c['제출 시각'] || '').slice(0,16).replace('T',' ');
+  const isArrival = c.type === 'arrival';
+  const tagClass = isArrival ? 'tsc-tag--arrival' : 'tsc-tag--departure';
+  const tagText = isArrival ? '등교' : '하교';
+  const emoTxt = c['감정'] || '';
+  const detailRows = isArrival
+    ? [
+        ['에너지', c['에너지']],
+        ['몸의 위치', c['몸의 위치']],
+        ['원인', c['원인']],
+        ['한 줄 기도', c['한 줄 기도']],
+      ]
+    : [
+        ['세부 감정', c['세부 감정']],
+        ['몸의 위치', c['몸의 위치']],
+        ['조절 전략', c['조절 전략']],
+        ['관계', c['관계']],
+        ['미션 피드백', c['미션 피드백']],
+        ['자랑스러운 순간', c['자랑스러운 순간']],
+        ['내일 다짐', c['내일 다짐']],
+        ['감사', c['감사']],
+      ];
+  return `
+    <div class="sp-record">
+      <div class="spr-top">
+        <span class="tsc-tag ${tagClass}">${tagText}</span>
+        <span class="spr-time">${esc(ts)}</span>
+        <span class="spr-emo" style="color:${emoColor(emoTxt)}">${esc(emoTxt)}</span>
+      </div>
+      <div class="spr-grid">
+        ${detailRows.filter(([_, v]) => v).map(([k, v]) => `
+          <div class="spr-cell"><span class="spr-k">${esc(k)}</span><span class="spr-v">${esc(v)}</span></div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// BULK ADD STUDENT MODAL
+// ════════════════════════════════════════════════════════════
+
+function openBulkAddModal() {
+  const mount = $('#t-modal-mount');
+  const existing = STUDENTS.slice();
+  mount.innerHTML = `
+    <div class="t-modal" id="bulk-modal">
+      <div class="t-modal-backdrop"></div>
+      <div class="t-modal-card">
+        <div class="t-modal-head">
+          <h2>학생 추가</h2>
+          <button class="t-modal-close">×</button>
+        </div>
+        <div class="t-modal-body">
+          <p style="font-size:13px;color:var(--fg-mute);margin-bottom:14px">한 줄에 한 명씩 이름을 입력하세요. 한 번에 여러 명 추가 가능합니다.</p>
+          <textarea class="bulk-add-text" id="bulk-add-text" placeholder="예시:&#10;김지호&#10;이서연&#10;박민준" rows="10" autofocus></textarea>
+          <div class="bulk-add-existing">
+            <div class="bae-label">이미 등록된 학생 (${existing.length}명)</div>
+            <div class="bae-chips">
+              ${existing.length ? existing.map(n => `<span class="bae-chip">${esc(n)}</span>`).join('') : '<span style="font-size:12px;color:var(--fg-mute)">아직 없음</span>'}
+            </div>
+          </div>
+          <div class="sa-err" id="bulk-add-err"></div>
+        </div>
+        <div class="t-modal-foot">
+          <button class="sa-btn sa-btn--ghost" id="bulk-cancel">취소</button>
+          <button class="sa-btn sa-btn--primary" id="bulk-submit">추가</button>
+        </div>
+      </div>
+    </div>`;
+
+  const close = () => mount.innerHTML = '';
+  mount.querySelector('.t-modal-close').addEventListener('click', close);
+  mount.querySelector('.t-modal-backdrop').addEventListener('click', close);
+  mount.querySelector('#bulk-cancel').addEventListener('click', close);
+
+  // Focus textarea
+  setTimeout(() => $('#bulk-add-text')?.focus(), 50);
+
+  mount.querySelector('#bulk-submit').addEventListener('click', async () => {
+    const text = $('#bulk-add-text').value;
+    const names = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const err = $('#bulk-add-err');
+    err.textContent = '';
+    if (!names.length) { err.textContent = '이름을 한 명 이상 입력해주세요.'; return; }
+
+    const dupes = names.filter(n => STUDENTS.includes(n));
+    if (dupes.length) { err.textContent = `이미 등록된 학생: ${dupes.join(', ')}`; return; }
+
+    const btn = $('#bulk-submit');
+    btn.disabled = true;
+    btn.textContent = `추가 중… (0/${names.length})`;
+
+    let success = 0;
+    for (let i = 0; i < names.length; i++) {
+      btn.textContent = `추가 중… (${i+1}/${names.length})`;
+      const ok = await addStudentToBackend(names[i]);
+      if (ok) success++;
+    }
+
+    close();
+    toast(`${success}명 추가되었습니다 ✓`);
+    renderTeacher();
+  });
 }
 
 
