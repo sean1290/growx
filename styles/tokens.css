@@ -55,7 +55,7 @@
   /* ── Type ────────────────────────────────── */
   --f-display:    'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
   --f-body:       'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
-  --f-mono:       ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --f-mono:       'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
   --f-num:        'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
 
   --t-display-1:  clamp(28px, 3.6vw, 48px);
