@@ -1,80 +1,60 @@
 /* ─────────────────────────────────────────────────────────────
    Grow X SSEL · Login Page Logic
+   Email + password → routed by role from backend.
    ───────────────────────────────────────────────────────────── */
 
 (() => {
 'use strict';
 
-const { SCHOOL, CLASSROOMS, TEACHERS, setSession, getSession } = window.GX;
+const { api, setSession, getSession, clearSession } = window.GX;
 
-// If already logged in, redirect
+// Already logged in → redirect
 const existing = getSession();
 if (existing) {
-  window.location.href = existing.role === 'admin' ? 'admin.html' : 'app.html';
+  routeByRole(existing.role);
 }
 
-// Populate classroom dropdown
-const clsSel = document.getElementById('teacher-class-select');
-CLASSROOMS.forEach(c => {
-  const t = TEACHERS.find(t => t.id === c.teacherId);
-  const opt = document.createElement('option');
-  opt.value = c.id;
-  opt.textContent = `${c.name} · ${t?.name || ''} 담임`;
-  clsSel.appendChild(opt);
-});
+const form     = document.getElementById('login-form');
+const emailEl  = document.getElementById('login-email');
+const pwEl     = document.getElementById('login-pw');
+const errEl    = document.getElementById('login-err');
+const submitEl = document.getElementById('login-submit');
 
-// Role tab switching
-const tabs = document.querySelectorAll('.role-tab');
-const teacherForm = document.getElementById('teacher-login-form');
-const adminForm   = document.getElementById('admin-login-form');
-let activeRole = 'teacher';
-
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    activeRole = tab.dataset.role;
-    tabs.forEach(t => t.classList.toggle('is-active', t === tab));
-    teacherForm.style.display = activeRole === 'teacher' ? '' : 'none';
-    adminForm.style.display   = activeRole === 'admin'   ? '' : 'none';
-  });
-});
-
-// Teacher login
-teacherForm.addEventListener('submit', e => {
+form.addEventListener('submit', async e => {
   e.preventDefault();
-  const classId = clsSel.value;
-  const pw      = document.getElementById('teacher-pw').value;
-  const err     = document.getElementById('teacher-err');
-  err.textContent = '';
+  errEl.textContent = '';
+  const email = emailEl.value.trim();
+  const pw    = pwEl.value;
+  if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
 
-  if (!classId) { err.textContent = '학급을 선택해주세요.'; return; }
+  submitEl.disabled = true;
+  submitEl.innerHTML = '확인 중…';
 
-  const cls     = CLASSROOMS.find(c => c.id === classId);
-  const teacher = TEACHERS.find(t => t.id === cls?.teacherId);
-
-  if (!teacher || teacher.password !== pw) {
-    err.textContent = '비밀번호가 맞지 않습니다.';
-    document.getElementById('teacher-pw').value = '';
-    return;
+  try {
+    const res = await api('login', { email, password: pw });
+    if (!res.ok) {
+      errEl.textContent = res.error || '로그인에 실패했습니다.';
+      pwEl.value = '';
+      return;
+    }
+    const { role } = res;
+    const sess = { ...res };
+    delete sess.ok;
+    setSession(sess);
+    routeByRole(role);
+  } catch (err) {
+    errEl.textContent = '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
+    console.error(err);
+  } finally {
+    submitEl.disabled = false;
+    submitEl.innerHTML = '로그인 <span aria-hidden="true">→</span>';
   }
-
-  setSession({ role:'teacher', teacherId:teacher.id, teacherName:teacher.name, classId, className:cls.name, grade:cls.grade });
-  window.location.href = 'app.html';
 });
 
-// Admin login
-adminForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const pw  = document.getElementById('admin-pw').value;
-  const err = document.getElementById('admin-err');
-  err.textContent = '';
-
-  if (pw !== SCHOOL.password) {
-    err.textContent = '비밀번호가 맞지 않습니다.';
-    document.getElementById('admin-pw').value = '';
-    return;
-  }
-
-  setSession({ role:'admin', schoolId:SCHOOL.id, schoolName:SCHOOL.name });
-  window.location.href = 'admin.html';
-});
+function routeByRole(role) {
+  if (role === 'super_admin')  window.location.href = 'admin.html';
+  else if (role === 'school_admin') window.location.href = 'school-admin.html';
+  else if (role === 'teacher') window.location.href = 'app.html';
+  else clearSession();
+}
 })();

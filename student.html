@@ -46,21 +46,16 @@
 (function () {
   var params  = new URLSearchParams(location.search);
   var classId = params.get('class');
-
-  // Default to first classroom if no param (useful for demo/dev)
-  if (!classId && window.GX.CLASSROOMS.length) {
-    classId = window.GX.CLASSROOMS[0].id;
+  if (!classId) {
+    document.body.innerHTML =
+      '<div style="padding:60px 24px;text-align:center;font-family:Pretendard,sans-serif;color:#475569">'
+      + '<div style="font-size:48px;margin-bottom:14px">🔗</div>'
+      + '<div style="font-size:18px;font-weight:600;color:#0F172A;margin-bottom:8px">학급 링크가 필요합니다</div>'
+      + '<div style="font-size:13px">담임 선생님께 학급 전용 URL을 받아주세요.</div>'
+      + '</div>';
+    return;
   }
-
-  var cls = window.GX.CLASSROOMS.find(function (c) { return c.id === classId; });
-  if (cls) {
-    window.GX.setSession({
-      role:      'student',
-      classId:   cls.id,
-      className: cls.name,
-      grade:     cls.grade,
-    });
-  }
+  window.GX.setSession({ role: 'student', classId: classId });
 })();
 </script>
 <script src="scripts/app.js" defer></script>

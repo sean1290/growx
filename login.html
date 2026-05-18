@@ -38,38 +38,17 @@
       <h1 class="lpc-title">환영합니다</h1>
       <p class="lpc-sub">계정 유형을 선택하고 로그인해주세요.</p>
 
-      <div class="role-tabs" id="role-tabs">
-        <button class="role-tab is-active" data-role="teacher">담임 선생님</button>
-        <button class="role-tab" data-role="admin">학교 관리자</button>
-      </div>
-
-      <!-- Teacher form -->
-      <form id="teacher-login-form" class="login-form">
+      <form id="login-form" class="login-form">
         <div class="lf-field">
-          <label class="lf-label" for="teacher-class-select">학급</label>
-          <div class="lf-select-wrap">
-            <select class="lf-select" id="teacher-class-select">
-              <option value="">— 학급을 선택하세요 —</option>
-            </select>
-            <span class="lf-caret" aria-hidden="true">▾</span>
-          </div>
+          <label class="lf-label" for="login-email">이메일</label>
+          <input class="lf-input" type="email" id="login-email" placeholder="example@school.kr" autocomplete="email" required>
         </div>
         <div class="lf-field">
-          <label class="lf-label" for="teacher-pw">비밀번호</label>
-          <input class="lf-input" type="password" id="teacher-pw" placeholder="••••••••" autocomplete="current-password" required>
+          <label class="lf-label" for="login-pw">비밀번호</label>
+          <input class="lf-input" type="password" id="login-pw" placeholder="••••••••" autocomplete="current-password" required>
         </div>
-        <div class="lf-err" id="teacher-err" role="alert"></div>
-        <button type="submit" class="lf-submit">로그인 <span aria-hidden="true">→</span></button>
-      </form>
-
-      <!-- Admin form -->
-      <form id="admin-login-form" class="login-form" style="display:none">
-        <div class="lf-field">
-          <label class="lf-label" for="admin-pw">학교 관리자 비밀번호</label>
-          <input class="lf-input" type="password" id="admin-pw" placeholder="••••••••" autocomplete="current-password" required>
-        </div>
-        <div class="lf-err" id="admin-err" role="alert"></div>
-        <button type="submit" class="lf-submit">관리자 로그인 <span aria-hidden="true">→</span></button>
+        <div class="lf-err" id="login-err" role="alert"></div>
+        <button type="submit" class="lf-submit" id="login-submit">로그인 <span aria-hidden="true">→</span></button>
       </form>
 
       <div class="lpc-foot" style="display:flex;flex-direction:column;gap:10px;align-items:center">

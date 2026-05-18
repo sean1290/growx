@@ -10,18 +10,64 @@
 // AUTH — require session
 // ════════════════════════════════════════════════════════════
 
-const _sess = window.GX.requireAuth(['teacher', 'admin', 'admin_view', 'student']);
+const _sess = window.GX.requireAuth(['teacher', 'admin_view', 'student']);
 if (!_sess) return;
 
 const SESSION = _sess;
-const CLASS_STUDENTS = window.GX.STUDENTS[SESSION.classId] || [];
+const STUDENT_OBJS = [];  // populated async; each: {id, name}
+
+async function submitCheckInToBackend(type, ans) {
+  const so = STUDENT_OBJS.find(s => s.name === ST.student);
+  if (!so) return; // student device with name not in roster — skip
+  try {
+    await window.GX.api('submitCheckIn', {
+      studentId:   so.id,
+      classId:     SESSION.classId,
+      schoolId:    SESSION.schoolId || '',
+      studentName: ST.student,
+      type, data: ans,
+    });
+  } catch (e) { console.warn('submitCheckIn failed', e); }
+}
+
+async function addStudentToBackend(name) {
+  try {
+    const res = await window.GX.api('addStudent', {
+      classId: SESSION.classId,
+      schoolId: SESSION.schoolId || '',
+      name,
+    });
+    if (res.ok) {
+      STUDENT_OBJS.push({ id: res.studentId, classId: SESSION.classId, schoolId: SESSION.schoolId, name });
+      STUDENTS.push(name);
+      return true;
+    }
+    alert(res.error || '추가 실패');
+    return false;
+  } catch (e) { alert('서버 오류: ' + e.message); return false; }
+}
+
+async function deleteStudentFromBackend(name) {
+  const so = STUDENT_OBJS.find(s => s.name === name);
+  if (!so) return false;
+  try {
+    const res = await window.GX.api('deleteStudent', { studentId: so.id });
+    if (res.ok) {
+      const i = STUDENT_OBJS.findIndex(s => s.id === so.id);
+      if (i !== -1) STUDENT_OBJS.splice(i, 1);
+      const j = STUDENTS.indexOf(name);
+      if (j !== -1) STUDENTS.splice(j, 1);
+      return true;
+    }
+    return false;
+  } catch (e) { alert('삭제 실패: ' + e.message); return false; }
+}
 
 // ════════════════════════════════════════════════════════════
 // DATA
 // ════════════════════════════════════════════════════════════
 
-const STUDENTS = CLASS_STUDENTS.length ? CLASS_STUDENTS
-  : ['김폭스','준호','민지','서윤','지호','예은','태현','하은','도윤','수빈','재원','유진','성민'];
+const STUDENTS = [];  // mutable array; hydrated from backend at init
 
 const EMO_PRIMARY = [
   { id:'joyful',  label:'기쁨·감사',   face:'😊', color:'#F59E0B', desc:'기분 좋고 활기차요' },
@@ -168,11 +214,7 @@ const MOCK_FEED = [
   {name:'수빈', session:'등교', emo:'불안·걱정', cause:'학업·과제', time:'08:24'},
   {name:'재원', session:'등교', emo:'평온·안정', cause:'—', time:'08:18'},
 ];
-const MOCK_ALERTS = [
-  {name:'태현', level:'high', label:'전반적 무감각 + 수면 이슈', action:'오늘 선생님과 직접 대화 권장'},
-  {name:'준호', level:'watch', label:'친구 관계 갈등 신호', action:'쉬는 시간에 가볍게 안부 묻기'},
-  {name:'지호', level:'watch', label:'가족 관련 불안 반복', action:'신뢰하는 어른 연결 고려'},
-];
+const MOCK_ALERTS = [];  // populated from real check-in patterns later
 const MOCK_AXES_WEEK = [
   {name:'자기 인식', pct:74, color:'#2E3550'},
   {name:'자기 관리', pct:63, color:'#4A5D3F'},
@@ -288,13 +330,17 @@ function renderHome() {
 
       <div class="home-pick">
         <div class="hp-label">학생 선택</div>
+        ${STUDENTS.length ? `
         <div class="hp-select-wrap">
           <select class="hp-select" id="home-student">
             <option value="">— 이름을 선택하세요 —</option>
             ${STUDENTS.map(s => `<option value="${esc(s)}" ${s===ST.student?'selected':''}>${esc(s)}</option>`).join('')}
           </select>
           <span class="hp-caret" aria-hidden="true">▾</span>
-        </div>
+        </div>` : `
+        <div style="padding:16px;background:var(--paper-2);border-radius:var(--r-md);font-size:13px;color:var(--fg-mute);text-align:center">
+          담임 선생님이 아직 학생을 등록하지 않았습니다.
+        </div>`}
       </div>
 
       <div class="home-actions">
@@ -675,8 +721,10 @@ function bindCheckinHandlers(session, q) {
     else {
       if (isArrival) {
         state.missionShown = true;
+        submitCheckInToBackend('arrival', state.ans);
         renderArrivalMission();
       } else {
+        submitCheckInToBackend('departure', state.ans);
         toast('하교 체크인이 저장됐어요 ✓');
         if (SESSION.role === 'student') {
           ST.student = '';
@@ -757,31 +805,7 @@ function renderArrivalMission() {
 // ════════════════════════════════════════════════════════════
 
 // Mock per-student check-in data (keyed by name)
-const MOCK_STUDENT_DATA = (() => {
-  const emoPairs = [
-    {emo:'기쁨·감사',color:'#F59E0B',risk:null},
-    {emo:'평온·안정',color:'#0284C7',risk:null},
-    {emo:'무거움·슬픔',color:'#9333EA',risk:'watch'},
-    {emo:'불안·걱정',color:'#F43F5E',risk:'watch'},
-    {emo:'짜증·화남',color:'#EF4444',risk:null},
-    {emo:'무감각·피곤',color:'#94A3B8',risk:'high'},
-  ];
-  const causes = ['친구 관계','학업·과제','가족','신앙·기도','내 자신','건강·수면'];
-  const zones  = ['가슴','머리','배','어깨','목'];
-  const data = {};
-  STUDENTS.forEach((name, i) => {
-    const ep = emoPairs[i % emoPairs.length];
-    data[name] = {
-      emo: ep.emo, emoColor: ep.color, risk: ep.risk,
-      cause: causes[i % causes.length],
-      zone:  zones[i % zones.length],
-      checkedIn: i % 4 !== 3,
-      missionDone: i % 3 === 0,
-      arrivalTime: `0${7 + (i % 2)}:${String(20 + i*3).padStart(2,'0')}`,
-    };
-  });
-  return data;
-})();
+const MOCK_STUDENT_DATA = {};  // populated from real check-ins later
 
 let _selectedStudent = null;
 
@@ -894,12 +918,16 @@ function renderTeacher() {
 
         <!-- Student list + profile -->
         <div class="t-section-head" style="margin-bottom:10px">
-          <div class="tsh-title">학생 목록</div>
-          <div class="tsh-sub">클릭 → 개별 프로필</div>
+          <div class="tsh-title">학생 목록 (${STUDENTS.length}명)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="tsh-sub">학생 클릭 → 개별 프로필</span>
+            <button class="t-add-btn" id="t-add-student">+ 학생 추가</button>
+            ${STUDENTS.length ? `<button class="t-share-btn" id="t-share-link" title="학생 디바이스용 링크">📱 학생용 링크</button>` : ''}
+          </div>
         </div>
 
         <div class="t-student-panel">
-          <div class="sp-list">${studentRows}</div>
+          <div class="sp-list">${STUDENTS.length ? studentRows : `<div style="padding:30px 20px;text-align:center;color:var(--fg-mute);font-size:13px">아직 학생이 없습니다.<br>위 <b>+ 학생 추가</b> 버튼으로 학생을 등록해주세요.</div>`}</div>
           <div class="sp-profile" id="sp-profile">${profilePanel}</div>
         </div>
 
@@ -946,10 +974,22 @@ function renderTeacher() {
 
   $('#t-logout')?.addEventListener('click', () => {
     if (SESSION.adminBack) {
-      window.location.href = 'admin.html';
+      window.location.href = SESSION.adminBack === 'school-admin.html' ? 'school-admin.html' : 'admin.html';
     } else {
       window.GX.clearSession();
     }
+  });
+
+  $('#t-add-student')?.addEventListener('click', async () => {
+    const name = prompt('추가할 학생 이름을 입력하세요:');
+    if (!name || !name.trim()) return;
+    const ok = await addStudentToBackend(name.trim());
+    if (ok) renderTeacher();
+  });
+
+  $('#t-share-link')?.addEventListener('click', () => {
+    const url = `${location.origin}/student.html?class=${encodeURIComponent(SESSION.classId)}`;
+    navigator.clipboard.writeText(url).then(() => toast('학생용 링크가 복사되었습니다 ✓')).catch(() => prompt('학생 디바이스에서 이 URL을 열어주세요:', url));
   });
 }
 
@@ -1016,8 +1056,28 @@ function switchView(view) {
   }
 }
 
-function init() {
+async function loadRoster() {
+  try {
+    const res = await window.GX.api('getClassRoster', { classId: SESSION.classId });
+    if (res.ok) {
+      if (res.classInfo) {
+        SESSION.className = res.classInfo.name;
+        SESSION.grade     = res.classInfo.grade;
+      }
+      if (res.students) {
+        STUDENT_OBJS.length = 0;
+        STUDENT_OBJS.push(...res.students);
+        STUDENTS.length = 0;
+        STUDENTS.push(...res.students.map(s => s.name));
+      }
+    }
+  } catch (e) { console.warn('roster load failed', e); }
+}
+
+async function init() {
   $('#top-date').textContent = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});
+
+  await loadRoster();
 
   if (SESSION.role === 'student') {
     // Student mode: show class badge, hide teacher button

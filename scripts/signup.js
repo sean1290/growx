@@ -1,40 +1,36 @@
 /* ─────────────────────────────────────────────────────────────
    Grow X SSEL · Signup Logic
-   Stores registrations in localStorage under 'growx_registrations'
+   Submits registrations to backend (Google Sheets).
    ───────────────────────────────────────────────────────────── */
 
 (() => {
 'use strict';
 
+const { api } = window.GX;
+
 const STEPS = [
   { num:1, label:'학교 정보'   },
   { num:2, label:'담당자 정보' },
-  { num:3, label:'학급 설정'   },
-  { num:4, label:'계정 설정'   },
+  { num:3, label:'계정 설정'   },
 ];
 
-const SCHOOL_TYPES    = ['초등학교','중학교','고등학교','초중통합','중고통합','기독교 홈스쿨 협동조합','기타'];
-const REGIONS         = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
-const CONTACT_ROLES   = ['교장','교감','부장교사','담임교사','행정실장','기타'];
-const GRADES          = ['초등부','중등부','고등부'];
+const SCHOOL_TYPES  = ['초등학교','중학교','고등학교','초중통합','중고통합','기독교 홈스쿨 협동조합','기타'];
+const REGIONS       = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
+const CONTACT_ROLES = ['교장','교감','부장교사','담임교사','행정실장','기타'];
 
 let step = 1;
-let classroomCount = 1;
 
 const state = {
-  school: {},
+  school:  {},
   contact: {},
-  classrooms: [],
   account: {},
 };
 
-// ── DOM refs ─────────────────────────────────
-const stepsEl    = document.getElementById('su-steps');
-const formBody   = document.getElementById('su-form-body');
-const cardFoot   = document.getElementById('su-card-foot');
-const successEl  = document.getElementById('su-success');
+const stepsEl   = document.getElementById('su-steps');
+const formBody  = document.getElementById('su-form-body');
+const cardFoot  = document.getElementById('su-card-foot');
+const successEl = document.getElementById('su-success');
 
-// ── Render step indicators ────────────────────
 function renderSteps() {
   stepsEl.innerHTML = STEPS.map(s => `
     <div class="su-step ${s.num < step ? 'is-done' : s.num === step ? 'is-active' : ''}">
@@ -43,18 +39,15 @@ function renderSteps() {
     </div>`).join('');
 }
 
-// ── Render form body per step ─────────────────
 function renderStep() {
   renderSteps();
-  switch (step) {
-    case 1: renderSchoolStep(); break;
-    case 2: renderContactStep(); break;
-    case 3: renderClassroomStep(); break;
-    case 4: renderAccountStep(); break;
-  }
+  if (step === 1) renderSchoolStep();
+  if (step === 2) renderContactStep();
+  if (step === 3) renderAccountStep();
+
   cardFoot.innerHTML = `
     <button class="su-btn-back" id="btn-back">${step === 1 ? '← 로그인으로' : '← 이전'}</button>
-    <button class="su-btn-next" id="btn-next">${step === 4 ? '신청 완료 →' : '다음 →'}</button>`;
+    <button class="su-btn-next" id="btn-next">${step === 3 ? '신청 완료 →' : '다음 →'}</button>`;
   document.getElementById('btn-back').addEventListener('click', onBack);
   document.getElementById('btn-next').addEventListener('click', onNext);
 }
@@ -99,7 +92,7 @@ function renderSchoolStep() {
 
 function renderContactStep() {
   formBody.innerHTML = `
-    <div class="su-section-title">담당자 정보</div>
+    <div class="su-section-title">담당자 정보 <span style="font-weight:400;color:var(--fg-mute);font-size:12px">— 이 분이 학교 관리자가 됩니다</span></div>
     <div class="su-grid">
       <div class="su-field">
         <label class="su-label">담당자 이름 <span class="req">*</span></label>
@@ -115,7 +108,7 @@ function renderContactStep() {
         </div>
       </div>
       <div class="su-field">
-        <label class="su-label">이메일 <span class="req">*</span></label>
+        <label class="su-label">이메일 (로그인 ID) <span class="req">*</span></label>
         <input class="su-input" id="f-contact-email" type="email" placeholder="example@school.kr" value="${esc(state.contact.email||'')}">
       </div>
       <div class="su-field">
@@ -130,66 +123,12 @@ function renderContactStep() {
     <div class="su-err" id="step-err"></div>`;
 }
 
-function renderClassroomStep() {
-  const saved = state.classrooms;
-  formBody.innerHTML = `
-    <div class="su-section-title">학급 설정 <span style="font-weight:400;color:var(--fg-mute);font-size:12px">— 나중에 추가 가능합니다</span></div>
-    <div class="classroom-list" id="classroom-list">
-      ${saved.length ? saved.map((c, i) => classroomItemHTML(i, c)).join('') : classroomItemHTML(0)}
-    </div>
-    <button class="su-add-btn" id="add-classroom">+ 학급 추가</button>
-    <div class="su-err" id="step-err" style="margin-top:10px"></div>`;
-
-  document.getElementById('add-classroom').addEventListener('click', () => {
-    const list = document.getElementById('classroom-list');
-    const idx  = list.children.length;
-    const div  = document.createElement('div');
-    div.innerHTML = classroomItemHTML(idx);
-    list.appendChild(div.firstElementChild);
-    bindRemoveButtons();
-  });
-  bindRemoveButtons();
-}
-
-function classroomItemHTML(idx, data = {}) {
-  return `
-    <div class="classroom-item" data-idx="${idx}">
-      <div class="ci-title">학급 ${idx + 1}</div>
-      ${idx > 0 ? `<button class="ci-remove" type="button">×</button>` : ''}
-      <div class="su-grid">
-        <div class="su-field">
-          <label class="su-label">학급 이름 <span class="req">*</span></label>
-          <input class="su-input ci-name" placeholder="예: 중등부 1반" value="${esc(data.name||'')}">
-        </div>
-        <div class="su-field">
-          <label class="su-label">담임 선생님 이름 <span class="req">*</span></label>
-          <input class="su-input ci-teacher" placeholder="예: 김하나" value="${esc(data.teacherName||'')}">
-        </div>
-        <div class="su-field">
-          <label class="su-label">학급 구분</label>
-          <div class="su-select-wrap">
-            <select class="su-select ci-grade">
-              ${GRADES.map(g => `<option value="${g}" ${(data.grade||'중등부')===g?'selected':''}>${g}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div class="su-field">
-          <label class="su-label">예상 학생 수</label>
-          <input class="su-input ci-students" type="number" min="1" max="50" placeholder="20" value="${esc(data.studentCount||'')}">
-        </div>
-      </div>
-    </div>`;
-}
-
-function bindRemoveButtons() {
-  document.querySelectorAll('.ci-remove').forEach(btn => {
-    btn.onclick = () => btn.closest('.classroom-item').remove();
-  });
-}
-
 function renderAccountStep() {
   formBody.innerHTML = `
     <div class="su-section-title">관리자 계정 설정</div>
+    <div style="margin-bottom:18px;padding:12px 14px;background:var(--soft-bg);border:1px solid rgba(29,89,240,0.12);border-radius:var(--r-md);font-size:12px;color:var(--ink-2);line-height:1.6">
+      로그인 ID: <b>${esc(state.contact.email || '')}</b>
+    </div>
     <div class="su-grid su-grid--full">
       <div class="su-field">
         <label class="su-label">관리자 비밀번호 <span class="req">*</span></label>
@@ -203,8 +142,8 @@ function renderAccountStep() {
     </div>
 
     <div style="margin-top:8px;margin-bottom:20px;padding:14px 16px;background:var(--soft-bg);border:1px solid rgba(29,89,240,0.12);border-radius:var(--r-md);font-size:12px;color:var(--fg-mute);line-height:1.7">
-      ℹ️ 지금은 테스트 단계로, 신청 후 Grow X 팀이 검토 후 24시간 이내 승인 처리합니다.<br>
-      승인 시 입력하신 이메일로 안내 메일이 발송됩니다.
+      ℹ️ 신청 후 Grow X 팀이 검토하여 24시간 이내 승인 처리합니다.<br>
+      승인 완료 후 위 이메일과 비밀번호로 로그인하여 학급/교사를 설정하실 수 있습니다.
     </div>
 
     <div class="su-agree-list">
@@ -224,7 +163,6 @@ function renderAccountStep() {
     <div class="su-err" id="step-err"></div>`;
 }
 
-// ── Validation ────────────────────────────────
 function validateAndSave() {
   const err = document.getElementById('step-err');
   err.textContent = '';
@@ -258,25 +196,6 @@ function validateAndSave() {
   }
 
   if (step === 3) {
-    const items = document.querySelectorAll('.classroom-item');
-    const classrooms = [];
-    for (const item of items) {
-      const name    = item.querySelector('.ci-name')?.value.trim();
-      const teacher = item.querySelector('.ci-teacher')?.value.trim();
-      if (!name || !teacher) { err.textContent = '각 학급의 이름과 담임 선생님 이름을 입력해주세요.'; return false; }
-      classrooms.push({
-        name,
-        teacherName:   teacher,
-        grade:         item.querySelector('.ci-grade')?.value || '중등부',
-        studentCount:  item.querySelector('.ci-students')?.value || '',
-      });
-    }
-    if (!classrooms.length) { err.textContent = '학급을 최소 1개 추가해주세요.'; return false; }
-    state.classrooms = classrooms;
-    return true;
-  }
-
-  if (step === 4) {
     const pw      = document.getElementById('f-pw').value;
     const pwConf  = document.getElementById('f-pw-confirm').value;
     const terms   = document.getElementById('agree-terms').checked;
@@ -291,10 +210,9 @@ function validateAndSave() {
   return true;
 }
 
-// ── Navigation ────────────────────────────────
 function onNext() {
   if (!validateAndSave()) return;
-  if (step < 4) { step++; renderStep(); window.scrollTo({top:0,behavior:'smooth'}); }
+  if (step < 3) { step++; renderStep(); window.scrollTo({top:0,behavior:'smooth'}); }
   else submitRegistration();
 }
 
@@ -303,24 +221,33 @@ function onBack() {
   else window.location.href = 'login.html';
 }
 
-// ── Submit ────────────────────────────────────
-function submitRegistration() {
-  const reg = {
-    id:          'reg_' + Date.now(),
-    status:      'pending',
-    school:      state.school,
-    contact:     state.contact,
-    classrooms:  state.classrooms,
-    password:    state.account.password,
-    marketing:   state.account.marketing,
-    submittedAt: new Date().toISOString(),
-  };
+async function submitRegistration() {
+  const btn = document.getElementById('btn-next');
+  const err = document.getElementById('step-err');
+  btn.disabled = true;
+  btn.textContent = '제출 중…';
+  err.textContent = '';
 
-  const existing = JSON.parse(localStorage.getItem('growx_registrations') || '[]');
-  existing.push(reg);
-  localStorage.setItem('growx_registrations', JSON.stringify(existing));
-
-  showSuccess(reg);
+  try {
+    const res = await api('registerSchool', {
+      school:   state.school,
+      contact:  state.contact,
+      password: state.account.password,
+      marketing: state.account.marketing,
+    });
+    if (!res.ok) {
+      err.textContent = res.error || '신청 제출에 실패했습니다.';
+      btn.disabled = false;
+      btn.textContent = '신청 완료 →';
+      return;
+    }
+    showSuccess({ id: res.id });
+  } catch (e) {
+    err.textContent = '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
+    btn.disabled = false;
+    btn.textContent = '신청 완료 →';
+    console.error(e);
+  }
 }
 
 function showSuccess(reg) {
@@ -337,18 +264,15 @@ function showSuccess(reg) {
       승인 완료 후 로그인하실 수 있습니다.
     </div>
     <div class="su-success-info">
-      <div class="sui-row"><span class="sui-label">학교명</span><span class="sui-val">${esc(reg.school.name)}</span></div>
-      <div class="sui-row"><span class="sui-label">담당자</span><span class="sui-val">${esc(reg.contact.name)} ${esc(reg.contact.role)}</span></div>
-      <div class="sui-row"><span class="sui-label">이메일</span><span class="sui-val">${esc(reg.contact.email)}</span></div>
-      <div class="sui-row"><span class="sui-label">학급 수</span><span class="sui-val">${reg.classrooms.length}개</span></div>
-      <div class="sui-row"><span class="sui-label">신청 번호</span><span class="sui-val" style="font-size:11px;color:var(--fg-mute)">${reg.id}</span></div>
+      <div class="sui-row"><span class="sui-label">학교명</span><span class="sui-val">${esc(state.school.name)}</span></div>
+      <div class="sui-row"><span class="sui-label">담당자</span><span class="sui-val">${esc(state.contact.name)} ${esc(state.contact.role)}</span></div>
+      <div class="sui-row"><span class="sui-label">로그인 ID</span><span class="sui-val">${esc(state.contact.email)}</span></div>
+      <div class="sui-row"><span class="sui-label">신청 번호</span><span class="sui-val" style="font-size:11px;color:var(--fg-mute)">${esc(reg.id)}</span></div>
     </div>
     <a href="login.html" style="margin-top:8px;font-size:13px;color:var(--twilight-2);text-decoration:none">← 로그인 페이지로 돌아가기</a>`;
 }
 
-// ── Helpers ───────────────────────────────────
 const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-// ── Init ──────────────────────────────────────
 renderStep();
 })();

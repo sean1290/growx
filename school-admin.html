@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grow X SSEL · 학교 관리자</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/admin.css">
+</head>
+<body class="admin-body">
+
+<header class="adm-header">
+  <div class="adm-logo">
+    <span>Grow <span class="brand-x">X</span></span>
+    <span class="brand-suf">SSEL</span>
+  </div>
+
+  <div class="adm-school-badge">
+    <span class="dot"></span>
+    <span id="sa-school-name">—</span>
+  </div>
+
+  <button class="adm-logout" id="sa-logout">로그아웃</button>
+</header>
+
+<main class="adm-main">
+
+  <div class="adm-page-head">
+    <div>
+      <div class="adm-eyebrow">학교 관리자 대시보드</div>
+      <h1 class="adm-page-title" id="sa-page-title">학급 / 교사 관리</h1>
+    </div>
+    <span class="adm-date" id="sa-date">—</span>
+  </div>
+
+  <div class="adm-stats">
+    <div class="adm-stat">
+      <div class="adm-stat-label">총 학급</div>
+      <div class="adm-stat-value" id="sa-stat-classes">—</div>
+      <div class="adm-stat-sub">등록된 학급</div>
+    </div>
+    <div class="adm-stat">
+      <div class="adm-stat-label">총 교사</div>
+      <div class="adm-stat-value" id="sa-stat-teachers">—</div>
+      <div class="adm-stat-sub">등록된 담임</div>
+    </div>
+    <div class="adm-stat adm-stat--accent">
+      <div class="adm-stat-label">담당자</div>
+      <div class="adm-stat-value" style="font-size:16px;font-weight:600" id="sa-contact-name">—</div>
+      <div class="adm-stat-sub" id="sa-contact-role">—</div>
+    </div>
+    <div class="adm-stat">
+      <div class="adm-stat-label">학교 유형</div>
+      <div class="adm-stat-value" style="font-size:16px;font-weight:600" id="sa-school-type">—</div>
+      <div class="adm-stat-sub" id="sa-school-region">—</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="adm-section-head">
+      <h2 class="adm-section-title">학급별 담임 교사</h2>
+      <button class="sa-add-btn" id="sa-add-teacher">+ 학급/교사 추가</button>
+    </div>
+    <div class="adm-class-grid" id="sa-class-grid"></div>
+  </div>
+
+</main>
+
+<!-- Add/Edit Teacher Modal -->
+<div class="sa-modal" id="sa-modal" style="display:none">
+  <div class="sa-modal-backdrop"></div>
+  <div class="sa-modal-card">
+    <div class="sa-modal-head">
+      <h3 id="sa-modal-title">학급/교사 추가</h3>
+      <button class="sa-modal-close" id="sa-modal-close">×</button>
+    </div>
+    <div class="sa-modal-body">
+      <div class="sa-field">
+        <label class="sa-label">학급 이름 <span class="req">*</span></label>
+        <input class="sa-input" id="sa-class-name" placeholder="예: 중등부 1반">
+      </div>
+      <div class="sa-field">
+        <label class="sa-label">학급 구분</label>
+        <div class="su-select-wrap">
+          <select class="sa-select" id="sa-grade">
+            <option value="초등부">초등부</option>
+            <option value="중등부" selected>중등부</option>
+            <option value="고등부">고등부</option>
+          </select>
+        </div>
+      </div>
+      <div class="sa-field">
+        <label class="sa-label">담임 교사 이름 <span class="req">*</span></label>
+        <input class="sa-input" id="sa-teacher-name" placeholder="예: 김하나">
+      </div>
+      <div class="sa-field">
+        <label class="sa-label">교사 로그인 이메일 <span class="req">*</span></label>
+        <input class="sa-input" id="sa-teacher-email" type="email" placeholder="teacher@school.kr">
+      </div>
+      <div class="sa-field">
+        <label class="sa-label">초기 비밀번호 <span class="req">*</span></label>
+        <input class="sa-input" id="sa-teacher-pw" type="text" placeholder="영문+숫자 6자 이상">
+        <div class="sa-hint">교사가 이 이메일과 비밀번호로 로그인합니다. 추후 변경 가능합니다.</div>
+      </div>
+      <div class="sa-err" id="sa-modal-err"></div>
+    </div>
+    <div class="sa-modal-foot">
+      <button class="sa-btn sa-btn--ghost" id="sa-modal-cancel">취소</button>
+      <button class="sa-btn sa-btn--primary" id="sa-modal-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="scripts/auth.js"></script>
+<script src="scripts/school-admin.js"></script>
+</body>
+</html>

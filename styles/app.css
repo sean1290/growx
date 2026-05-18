@@ -1394,6 +1394,27 @@ html, body { height: 100%; }
   text-transform: uppercase;
   color: var(--fg-mute);
 }
+.t-add-btn, .t-share-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--f-body);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+.t-add-btn {
+  background: var(--twilight-2);
+  color: #fff;
+  border: none;
+}
+.t-add-btn:hover { background: var(--twilight-3); }
+.t-share-btn {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--fg-soft);
+}
+.t-share-btn:hover { border-color: var(--twilight-2); color: var(--twilight-2); }
 
 .alert {
   display: grid;

@@ -418,6 +418,173 @@ html, body { height: 100%; }
 .rc-btn--reject:hover { background: var(--mist); }
 .rc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── School Admin: add button + modal ───────── */
+.sa-add-btn {
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--f-body);
+  color: #fff;
+  background: var(--twilight-2);
+  border: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.sa-add-btn:hover { background: var(--twilight-3); }
+
+.sa-edit-btn, .sa-delete-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--f-body);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--fg-soft);
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+}
+.sa-edit-btn:hover   { border-color: var(--twilight-2); color: var(--twilight-2); }
+.sa-delete-btn:hover { border-color: #EF4444; color: #EF4444; }
+
+.acc-creds {
+  font-size: 11px;
+  color: var(--fg-mute);
+  padding: 8px 10px;
+  background: var(--paper-1);
+  border-radius: var(--r-sm);
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+
+/* Modal */
+.sa-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.sa-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.sa-modal-card {
+  position: relative;
+  background: var(--bone);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.sa-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.sa-modal-head h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-1);
+}
+.sa-modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--fg-mute);
+  cursor: pointer;
+  line-height: 1;
+}
+.sa-modal-close:hover { color: var(--ink-1); }
+.sa-modal-body {
+  padding: 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sa-modal-foot {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 16px 28px 22px;
+  border-top: 1px solid var(--line);
+}
+.sa-field { display: flex; flex-direction: column; gap: 6px; }
+.sa-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.sa-label .req { color: #EF4444; }
+.sa-input, .sa-select {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--f-body);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--paper-1);
+  color: var(--ink-1);
+  width: 100%;
+  transition: border-color var(--dur-fast);
+}
+.sa-input:focus, .sa-select:focus {
+  outline: none;
+  border-color: var(--twilight-2);
+}
+.sa-hint {
+  font-size: 11px;
+  color: var(--fg-mute);
+  margin-top: 2px;
+}
+.sa-err {
+  font-size: 12px;
+  color: #EF4444;
+  min-height: 14px;
+}
+.sa-btn {
+  padding: 9px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--f-body);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border: none;
+  transition: background var(--dur-fast), opacity var(--dur-fast);
+}
+.sa-btn--primary {
+  background: var(--twilight-2);
+  color: #fff;
+}
+.sa-btn--primary:hover  { background: var(--twilight-3); }
+.sa-btn--ghost {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--fg-soft);
+}
+.sa-btn--ghost:hover { border-color: var(--ink-3); color: var(--ink-1); }
+.sa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sa-empty {
+  grid-column: 1 / -1;
+  padding: 32px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--fg-mute);
+  background: var(--bone);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+}
+
 /* ── Responsive ──────────────────────────────── */
 @media (max-width: 900px) {
   .adm-stats { grid-template-columns: repeat(2, 1fr); }
