@@ -1601,9 +1601,7 @@ async function init() {
   $('#open-checkin')?.addEventListener('click', () => {
     const base = location.href.replace(/\/[^/]*(\?.*)?$/, '');
     const url = `${base}/student.html?class=${encodeURIComponent(SESSION.classId || '')}`;
-    navigator.clipboard.writeText(url)
-      .then(() => toast('학생 체크인 링크가 복사되었습니다 ✓'))
-      .catch(() => prompt('학생 디바이스에서 이 URL을 열어주세요:', url));
+    window.open(url, '_blank');
   });
 
   // 교사 button: PIN-gated if a lock password is set on this device
