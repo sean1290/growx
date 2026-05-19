@@ -970,7 +970,8 @@ function paintTeacher() {
       ? `<div class="t-student-grid">${STUDENTS.map(renderStudentCard).join('')}</div>`
       : `<div class="t-empty">아직 학생이 없습니다.<br>위 <b>+ 학생 추가</b> 버튼으로 학생을 등록해주세요.</div>`}
 
-    <div class="cim-actions" style="padding-top:24px;border:0;justify-content:flex-end">
+    <div class="cim-actions" style="padding-top:24px;border:0;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button class="appbtn appbtn--ghost" id="t-lock-settings">🔒 ${getLockPassword() ? '잠금 비밀번호 변경' : '잠금 비밀번호 설정'}</button>
       <button class="appbtn appbtn--ghost" id="t-logout">${SESSION.adminBack ? '← 관리자로 돌아가기' : '로그아웃'}</button>
     </div>`;
 
@@ -1000,6 +1001,8 @@ function paintTeacher() {
   });
 
   $('#t-add-student')?.addEventListener('click', openBulkAddModal);
+
+  $('#t-lock-settings')?.addEventListener('click', openLockSettings);
 }
 
 function renderStudentCard(name) {
@@ -1424,6 +1427,117 @@ function switchView(view) {
     case 'departure': renderCheckin('departure'); break;
     case 'teacher':   renderTeacher(); break;
   }
+  updateHeaderButtons();
+}
+
+function updateHeaderButtons() {
+  if (SESSION.role === 'student') return; // students never see these
+  const checkinBtn = document.getElementById('open-checkin');
+  const teacherBtn = document.getElementById('open-teacher');
+  const onTeacher = ST.view === 'teacher';
+  if (checkinBtn) checkinBtn.style.display = onTeacher ? '' : 'none';
+  if (teacherBtn) teacherBtn.style.display = onTeacher ? 'none' : '';
+}
+
+// ── Teacher screen lock (per-classId, device-local PIN) ──
+function lockKey() { return 'growx_teacher_lock_' + (SESSION.classId || 'default'); }
+function getLockPassword() { return localStorage.getItem(lockKey()) || ''; }
+function setLockPassword(pw) {
+  if (pw) localStorage.setItem(lockKey(), pw);
+  else localStorage.removeItem(lockKey());
+}
+
+function openLockPrompt() {
+  const mount = $('#t-modal-mount');
+  mount.innerHTML = `
+    <div class="t-modal" id="lock-modal">
+      <div class="t-modal-backdrop"></div>
+      <div class="t-modal-card t-modal-card--sm">
+        <div class="t-modal-head">
+          <h2>교사 잠금 해제</h2>
+          <button class="t-modal-close">×</button>
+        </div>
+        <div class="t-modal-body">
+          <p class="lock-hint">대시보드로 이동하려면 교사 비밀번호를 입력하세요.</p>
+          <input type="password" class="lock-input" id="lock-input" placeholder="비밀번호" autocomplete="off">
+          <div class="sa-err" id="lock-err"></div>
+        </div>
+        <div class="t-modal-foot">
+          <button class="sa-btn sa-btn--ghost" id="lock-cancel">취소</button>
+          <button class="sa-btn sa-btn--primary" id="lock-submit">확인 →</button>
+        </div>
+      </div>
+    </div>`;
+  const close = () => mount.innerHTML = '';
+  mount.querySelector('.t-modal-close').addEventListener('click', close);
+  mount.querySelector('.t-modal-backdrop').addEventListener('click', close);
+  mount.querySelector('#lock-cancel').addEventListener('click', close);
+
+  const input = $('#lock-input');
+  const submit = () => {
+    if (input.value === getLockPassword()) {
+      close();
+      ST.teacherAuthed = true;
+      switchView('teacher');
+    } else {
+      $('#lock-err').textContent = '비밀번호가 일치하지 않습니다.';
+      input.value = '';
+      input.focus();
+    }
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  $('#lock-submit').addEventListener('click', submit);
+  setTimeout(() => input.focus(), 50);
+}
+
+function openLockSettings() {
+  const mount = $('#t-modal-mount');
+  const current = getLockPassword();
+  mount.innerHTML = `
+    <div class="t-modal" id="lock-settings-modal">
+      <div class="t-modal-backdrop"></div>
+      <div class="t-modal-card">
+        <div class="t-modal-head">
+          <h2>교사 잠금 비밀번호</h2>
+          <button class="t-modal-close">×</button>
+        </div>
+        <div class="t-modal-body">
+          <p class="lock-hint">${current
+            ? '체크인 화면에서 <b>교사</b> 버튼을 누를 때 입력할 비밀번호입니다. 이 디바이스에만 저장됩니다.'
+            : '비밀번호를 설정하면 학생이 <b>교사</b> 버튼을 눌러도 대시보드로 들어올 수 없습니다. 이 디바이스에만 저장됩니다.'
+          }</p>
+          ${current ? `
+            <label class="lock-label">현재 비밀번호</label>
+            <input type="password" class="lock-input" id="lock-current" placeholder="현재 비밀번호" autocomplete="off">
+          ` : ''}
+          <label class="lock-label">새 비밀번호 ${current ? '<span class="lock-label-hint">(비워두면 잠금 해제)</span>' : ''}</label>
+          <input type="password" class="lock-input" id="lock-new" placeholder="${current ? '비워두면 잠금 해제' : '새 비밀번호'}" autocomplete="off">
+          <div class="sa-err" id="lock-settings-err"></div>
+        </div>
+        <div class="t-modal-foot">
+          <button class="sa-btn sa-btn--ghost" id="lock-settings-cancel">취소</button>
+          <button class="sa-btn sa-btn--primary" id="lock-settings-save">저장</button>
+        </div>
+      </div>
+    </div>`;
+  const close = () => mount.innerHTML = '';
+  mount.querySelector('.t-modal-close').addEventListener('click', close);
+  mount.querySelector('.t-modal-backdrop').addEventListener('click', close);
+  mount.querySelector('#lock-settings-cancel').addEventListener('click', close);
+
+  $('#lock-settings-save').addEventListener('click', () => {
+    const err = $('#lock-settings-err');
+    err.textContent = '';
+    if (current) {
+      const cur = $('#lock-current').value;
+      if (cur !== current) { err.textContent = '현재 비밀번호가 일치하지 않습니다.'; return; }
+    }
+    const newPw = $('#lock-new').value.trim();
+    setLockPassword(newPw || null);
+    close();
+    toast(newPw ? '잠금 비밀번호가 저장되었습니다 ✓' : '잠금이 해제되었습니다 ✓');
+  });
+  setTimeout(() => $(current ? '#lock-current' : '#lock-new').focus(), 50);
 }
 
 async function loadRoster() {
@@ -1469,10 +1583,14 @@ async function init() {
       .catch(() => prompt('학생 디바이스에서 이 URL을 열어주세요:', url));
   });
 
-  // Auth: teacher header button now goes directly to teacher dashboard
+  // 교사 button: PIN-gated if a lock password is set on this device
   $('#open-teacher')?.addEventListener('click', () => {
-    ST.teacherAuthed = true;
-    switchView('teacher');
+    if (getLockPassword()) {
+      openLockPrompt();
+    } else {
+      ST.teacherAuthed = true;
+      switchView('teacher');
+    }
   });
 
   // Start at teacher view if logged in as teacher/admin_view
