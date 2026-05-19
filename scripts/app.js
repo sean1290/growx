@@ -398,10 +398,6 @@ const toast = msg => {
   clearTimeout(toast._t);
   toast._t = setTimeout(() => t.classList.remove('is-show'), 2400);
 };
-const greetingForNow = () => {
-  const h = new Date().getHours();
-  return h < 11 ? '좋은 아침이에요' : h < 16 ? '좋은 오후예요' : '수고했어요';
-};
 
 // ════════════════════════════════════════════════════════════
 // HOME VIEW
