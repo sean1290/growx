@@ -157,67 +157,54 @@
   align-items: end;
 }
 
-/* ── SSEL acronym band ─────────────────────── */
-.ssel-band {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+/* ── SSEL vertical stack — sits inside .manifesto-caption ────── */
+.ssel-stack {
+  margin-top: 28px;
+  padding-top: 20px;
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 44px;
-  background: linear-gradient(180deg, rgba(255,252,246,0.4), transparent);
-}
-.ssel-col {
-  position: relative;
-  padding: 24px 28px 22px;
-  border-right: 1px solid var(--line);
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ssel-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
   align-items: baseline;
-  gap: 18px;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
 }
-.ssel-col:last-child { border-right: 0; }
-.ssel-letter {
+.ssel-row:last-child { border-bottom: 0; }
+.sr-letter {
   font-family: var(--f-num);
-  font-variation-settings: "opsz" 144, "SOFT" 30, "wght" 400;
+  font-variation-settings: "opsz" 72, "SOFT" 20, "wght" 400;
   font-style: italic;
-  font-size: clamp(44px, 4.6vw, 72px);
-  line-height: 0.88;
-  letter-spacing: -0.025em;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: var(--twilight-2);
-  flex-shrink: 0;
 }
-.ssel-col--accent .ssel-letter { color: var(--ember); }
-.ssel-meta { display: flex; flex-direction: column; gap: 3px; padding-bottom: 6px; }
-.ssel-word {
+.sr-word {
   font-family: var(--f-body);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink-1);
-  line-height: 1.2;
 }
-.ssel-trans {
-  font-family: var(--f-mono);
-  font-size: 10px;
-  letter-spacing: var(--tracking-mono);
-  text-transform: uppercase;
+.sr-trans {
+  font-size: 11px;
+  font-weight: 500;
   color: var(--fg-mute);
 }
-.ssel-mark {
+.ssel-row--accent .sr-letter { color: var(--ember); }
+.ssel-row--accent { background: rgba(199,127,74,0.05); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: var(--r-sm); }
+.sr-plus {
   position: absolute;
-  top: 14px; right: 16px;
-  font-family: var(--f-mono);
-  font-size: 14px;
+  top: 8px; right: 8px;
+  font-size: 12px;
   color: var(--ember);
-  opacity: 0.8;
-}
-.ssel-col--accent { background: rgba(199,127,74,0.04); }
-
-@media (max-width: 760px) {
-  .ssel-band { grid-template-columns: repeat(2, 1fr); }
-  .ssel-col { border-bottom: 1px solid var(--line); }
-  .ssel-col:nth-child(2) { border-right: 0; }
-  .ssel-col:nth-child(3), .ssel-col:nth-child(4) { border-bottom: 0; }
+  opacity: 0.7;
 }
 
 .hero-eyebrow-row {
@@ -516,7 +503,14 @@
    ───────────────────────────────────────────────────────────── */
 
 .axes {
-  background: var(--ink-1);
+  background:
+    linear-gradient(
+      to bottom,
+      var(--paper-3) 0%,
+      var(--ink-1) 8%,
+      var(--ink-1) 92%,
+      var(--paper-1) 100%
+    );
   color: var(--paper-1);
   position: relative;
   overflow: clip;       /* clip without breaking sticky child */
