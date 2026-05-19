@@ -409,21 +409,18 @@ const greetingForNow = () => {
 
 function renderHome() {
   const hasStudent = !!ST.student;
-  const greet = ST.student ? `${ST.student}님,<br><em>${greetingForNow()}</em>` : `오늘의 마음을<br><em>살펴봐요</em>`;
-  const sub = ST.student
-    ? '지금 시간에 맞는 체크인을 골라주세요. 등교 체크인을 하면 오늘의 미션도 함께 받아요.'
-    : '먼저 이름을 선택해주세요. 등교 체크인부터 시작할 수 있어요.';
+  const greet = ST.student ? `${esc(ST.student)} 학생,<br><em>오늘도 승리해요</em>` : `오늘의 마음을<br><em>살펴봐요</em>`;
+  const sub = '오늘의 나를 기록하는 시간';
 
   $('#view-home').innerHTML = `
     <div class="home">
       <div class="home-greet">
-        <div class="hg-eyebrow">Grow X SSEL · ${new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})}</div>
         <h1 class="hg-title">${greet}</h1>
         <p class="hg-sub">${sub}</p>
       </div>
 
       <div class="home-pick">
-        <div class="hp-label">학생 선택</div>
+        <div class="hp-label">WELCOME,</div>
         ${STUDENTS.length ? `
         <div class="hp-select-wrap">
           <select class="hp-select" id="home-student">
