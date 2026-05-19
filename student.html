@@ -15,7 +15,7 @@
 </head>
 <body class="app-body">
 
-<!-- ─── TOP HEADER (no teacher button) ─── -->
+<!-- ─── TOP HEADER ─── -->
 <header class="app-header" id="app-header">
   <a class="header-brand" href="student.html" aria-label="홈으로">
     <span class="brand-mark">Grow <span class="brand-x">X</span></span>
@@ -27,7 +27,21 @@
     <span class="hm-pulse" aria-hidden="true"></span>
   </div>
 
-  <div class="student-class-badge" id="student-class-badge"></div>
+  <div class="header-actions">
+    <div class="student-class-badge" id="student-class-badge"></div>
+    <button class="header-teacher" id="open-teacher" aria-label="교사 대시보드">
+      <span class="ht-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V8a5 5 0 0 1 10 0v3"/>
+        </svg>
+      </span>
+      <span class="ht-label">교사</span>
+    </button>
+  </div>
+
+  <!-- Generic modal mount point (for the lock PIN prompt) -->
+  <div id="t-modal-mount"></div>
 </header>
 
 <!-- ─── MAIN ─── -->
@@ -54,6 +68,12 @@
       + '<div style="font-size:13px">담임 선생님께 학급 전용 URL을 받아주세요.</div>'
       + '</div>';
     return;
+  }
+  // If a teacher session is already on this device, back it up so the 교사
+  // button + PIN can restore it later without forcing a fresh login.
+  var existing = window.GX.getSession();
+  if (existing && (existing.role === 'teacher' || existing.role === 'admin_view')) {
+    localStorage.setItem('growx_teacher_backup', JSON.stringify(existing));
   }
   window.GX.setSession({ role: 'student', classId: classId });
 })();

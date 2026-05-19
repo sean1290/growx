@@ -1447,7 +1447,7 @@ function setLockPassword(pw) {
   else localStorage.removeItem(lockKey());
 }
 
-function openLockPrompt() {
+function openLockPrompt(onSuccess) {
   const mount = $('#t-modal-mount');
   mount.innerHTML = `
     <div class="t-modal" id="lock-modal">
@@ -1477,8 +1477,12 @@ function openLockPrompt() {
   const submit = () => {
     if (input.value === getLockPassword()) {
       close();
-      ST.teacherAuthed = true;
-      switchView('teacher');
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      } else {
+        ST.teacherAuthed = true;
+        switchView('teacher');
+      }
     } else {
       $('#lock-err').textContent = '비밀번호가 일치하지 않습니다.';
       input.value = '';
@@ -1566,13 +1570,35 @@ async function init() {
   await loadRoster();
 
   if (SESSION.role === 'student') {
-    // Student mode: show class badge, hide teacher/checkin header buttons
+    // Student mode (student.html shared device):
+    //  - hide 체크인 시작 (URL copy is meaningless here)
+    //  - keep 교사 button visible so the teacher can return to dashboard via PIN
     const badge = $('#student-class-badge');
     if (badge) badge.textContent = SESSION.className || '';
-    $('#open-teacher')?.style && ($('#open-teacher').style.display = 'none');
     $('#open-checkin')?.style && ($('#open-checkin').style.display = 'none');
+
+    $('#open-teacher')?.addEventListener('click', () => {
+      if (getLockPassword()) {
+        openLockPrompt(unlockToTeacher);
+      } else {
+        unlockToTeacher();
+      }
+    });
+
     switchView('home');
     return;
+  }
+
+  function unlockToTeacher() {
+    const backup = localStorage.getItem('growx_teacher_backup');
+    if (backup) {
+      window.GX.setSession(JSON.parse(backup));
+      localStorage.removeItem('growx_teacher_backup');
+      window.location.href = 'app.html';
+    } else {
+      // No teacher session cached on this device — send to login
+      window.location.href = 'login.html';
+    }
   }
 
   $('#open-checkin')?.addEventListener('click', () => {
